@@ -1,0 +1,104 @@
+##############################################################################
+# scelus-web — GitLab CI/CD Pipeline
+##############################################################################
+
+stages:
+  - install
+  - test
+  - build
+  - publish
+  - deploy
+
+variables:
+  DOCKER_IMAGE: "${CI_REGISTRY}/tjma/scelus/scelus-web"
+  NODE_VERSION: "22"
+
+# ── Cache Node Modules ────────────────────────────────────────────────────────
+.node-cache: &node-cache
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+    policy: pull-push
+
+# ── Instalar dependências ─────────────────────────────────────────────────────
+# @tjma/angular-21 é resolvida direto do Nexus (registry configurado em .npmrc)
+install:
+  stage: install
+  image: node:22-alpine
+  <<: *node-cache
+  script:
+    - npm ci
+
+# ── Testes unitários ──────────────────────────────────────────────────────────
+test:unit:
+  stage: test
+  image: node:22-alpine
+  <<: *node-cache
+  dependencies:
+    - install
+  script:
+    - npm test
+  artifacts:
+    paths:
+      - coverage/
+    expire_in: 7 days
+
+# ── Build produção ────────────────────────────────────────────────────────────
+build:prod:
+  stage: build
+  image: node:22-alpine
+  <<: *node-cache
+  dependencies:
+    - install
+  script:
+    - npm run build:prod
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+
+# ── Docker Build + Push ───────────────────────────────────────────────────────
+docker:build:
+  stage: publish
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA
+                   -t $DOCKER_IMAGE:latest .
+    - docker push $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $DOCKER_IMAGE:latest
+  only:
+    - main
+  needs:
+    - test:unit
+    - build:prod
+
+# ── Deploy Desenvolvimento ────────────────────────────────────────────────────
+deploy:desenv:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - apk add --no-cache openssh-client
+    - ssh -o StrictHostKeyChecking=no $DESENV_SSH_USER@$DESENV_HOST
+        "docker pull $DOCKER_IMAGE:latest &&
+         docker stop scelus-web || true &&
+         docker rm scelus-web || true &&
+         docker run -d --name scelus-web
+           --network tjma-net
+           -p 8082:80
+           $DOCKER_IMAGE:latest"
+  only:
+    - develop
+  environment:
+    name: desenvolvimento
+    url: https://sistemasd.tjma.jus.br/scelus
+  needs:
+    - docker:build

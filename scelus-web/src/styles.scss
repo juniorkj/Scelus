@@ -1,0 +1,90 @@
+// ── Scelus Web — Estilos globais ──────────────────────────────────────────────
+@use '@tjma/angular-21/styles.scss' as tj;
+
+// ── Variáveis customizadas do sistema Scelus ──────────────────────────────────
+:root {
+  --tpl-auth-bg-opacity: 0.5;
+  --tpl-auth-bg-color: var(--tj-primary-v900);
+  --tpl-auth-bg-divider: var(--tj-primary-v600);
+  --tpl-auth-menu-selected: var(--tj-primary-v700);
+}
+
+// ── Layout base ───────────────────────────────────────────────────────────────
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+// ── Ajustes Globais ──────────────────────────────────────────────────────────
+.tj-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
+  .tj-container {
+    flex: 1;
+    padding-bottom: 60px !important; // Espaço interno antes do rodapé
+  }
+
+  .tj-page-footer {
+    position: relative !important; // Deixa de ser absoluto para não sobrepor
+    margin-top: auto;
+  }
+}
+
+// ── Cabeçalho de seção interno ao tj-card ──────────────────────────────────
+// Substitui tj-card-header para evitar o botão accordion fantasma do TjCardModule.
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--tj-border-color, #e5e7eb);
+  margin-bottom: 1rem;
+
+  .section-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .section-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tj-text-primary, #111827);
+  }
+
+  .section-desc {
+    color: var(--tj-text-muted, #6b7280);
+    font-size: 0.8rem;
+    line-height: 1.3;
+    margin: 0;
+  }
+}
+
+// ── Correções de UI (Componentes Material) ──────────────────────────────────
+// Garante que o fundo do painel de seleção seja branco (evita o cinza indesejado)
+.mat-mdc-select-panel {
+  background-color: #fff !important;
+}
+
+.mat-datepicker-content {
+  background-color: #fff !important;
+}
+
+// ── Correção de Cor para SnackBars do Sistema ───────────────────────────────
+.tj-snack-bar.warning {
+  .mat-mdc-snackbar-surface {
+    background-color: var(--tj-warning-v600) !important;
+  }
+}
+
+.tj-snack-bar.danger {
+  .mat-mdc-snackbar-surface {
+    background-color: var(--tj-danger-v600) !important;
+  }
+}

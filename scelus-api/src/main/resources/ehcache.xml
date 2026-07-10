@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.ehcache.org/v3"
+        xmlns:jsr107="http://www.ehcache.org/v3/jsr107">
+
+    <!--
+        Cache para sessões do Sentinela.
+        Tokens são validados a cada requisição — TTL de 5 minutos evita
+        chamadas excessivas ao Oracle Sentinela mantendo segurança.
+    -->
+    <cache alias="sentinelaTokens">
+        <expiry>
+            <ttl unit="minutes">5</ttl>
+        </expiry>
+        <resources>
+            <heap unit="entries">500</heap>
+        </resources>
+    </cache>
+
+    <!--
+        Cache para dados de grupos/permissões do usuário.
+        Grupos mudam raramente — TTL de 15 minutos é seguro.
+    -->
+    <cache alias="usuarioGrupos">
+        <expiry>
+            <ttl unit="minutes">15</ttl>
+        </expiry>
+        <resources>
+            <heap unit="entries">200</heap>
+        </resources>
+    </cache>
+
+</config>

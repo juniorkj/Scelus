@@ -1,0 +1,37 @@
+# Compiled output
+/dist
+/tmp
+/out-tsc
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Angular cache
+.angular/
+.nx/cache
+
+# Build artifacts
+*.js.map
+
+# Misc
+.DS_Store
+Thumbs.db
+
+# Environments — não commitar secrets
+src/environments/environment.local.ts

@@ -1,0 +1,38 @@
+# Pastas de infraestrutura que NÃO devem ser enviadas (conforme solicitado)
+infra-spring/
+infra-angular-21/
+
+# Arquivos e pastas do sistema (logs, cache, etc.)
+.DS_Store
+*.log
+*.tmp
+*.bak
+
+# Spring Boot (Java)
+**/target/
+**/bin/
+**/.settings/
+**/.classpath
+**/.project
+**/.factorypath
+
+# Angular (Node)
+**/node_modules/
+**/.angular/
+**/dist/
+**/tmp/
+
+# Configurações de Ambiente (Segurança)
+**/.env
+**/.env.local
+**/.env.*.local
+**/credentials*
+
+# IDEs
+**/.idea/
+**/.vscode/
+**/*.suo
+**/*.ntvs*
+**/*.njsproj
+**/*.sln
+**/*.sw?

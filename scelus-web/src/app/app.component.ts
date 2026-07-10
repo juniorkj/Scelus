@@ -1,0 +1,85 @@
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import {
+  NavigationEnd,
+  NavigationSkipped,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
+import { environment } from '../environments/environment';
+import { TjApp, TjAuthService, TjAuthTemplateContext } from '@tjma/angular-21';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { filter, Subscription } from 'rxjs';
+
+/**
+ * Componente raiz do scelus-web.
+ *
+ * Usa o TjApp da infra-angular como shell da aplicação.
+ * O TjAuthTemplate (configurado nas rotas) gerencia o SSO Sentinela.
+ */
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, TjApp],
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.scss',
+})
+export class AppComponent implements OnInit, OnDestroy {
+  private router = inject(Router);
+  private tjContext = inject(TjAuthTemplateContext, { optional: true });
+  private authService = inject(TjAuthService);
+  private breakpointObserver = inject(BreakpointObserver);
+  private subscriptions = new Subscription();
+
+  constructor() {
+    this.ajustarFluxoLogout();
+  }
+
+  /**
+   * Corrige o comportamento do botão "Sair".
+   * A infra por padrão tenta chamar /scelus-api/logout, que resulta em 500.
+   * Forçamos o redirecionamento para o fluxo de logout do Sentinela.
+   */
+  private ajustarFluxoLogout(): void {
+    this.authService.logout = () => {
+      // Limpa estado local
+      this.authService.sentinelaToken.next(null);
+
+      // Acessando via bracket notation para evitar erro de compilação com campo privado
+      (this.authService as any)['_userContext']?.next(null);
+
+      localStorage.removeItem('USER_CONTEXT_KEY');
+
+      const sentinelaUrl = environment.sentinelaUrl;
+      const sistemaId = environment.sistemaId;
+      const base = sentinelaUrl.endsWith('/') ? sentinelaUrl.slice(0, -1) : sentinelaUrl;
+
+      // Redireciona para o logout centralizado do TJMA
+      window.location.assign(`${base}/LogoutAction.logout.mtw?sistema=${sistemaId}`);
+    };
+  }
+
+  ngOnInit(): void {
+    // Monitora a troca de rotas para fechar o menu mobile automaticamente ao navegar.
+    const navSubscription = this.router.events
+      .pipe(
+        filter(
+          (event): event is NavigationEnd | NavigationSkipped =>
+            event instanceof NavigationEnd || event instanceof NavigationSkipped
+        )
+      )
+      .subscribe(() => {
+        // retorna true se a tela corresponder ao breakpoint de Handset (mobile).
+        if (
+          this.breakpointObserver.isMatched(Breakpoints.Handset) &&
+          this.tjContext
+        ) {
+          this.tjContext.close();
+        }
+      });
+    this.subscriptions.add(navSubscription);
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+}

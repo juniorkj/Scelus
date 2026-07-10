@@ -1,0 +1,98 @@
+##############################################################################
+# scelus-api — GitLab CI/CD Pipeline
+##############################################################################
+
+stages:
+  - build
+  - test
+  - publish
+  - deploy
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -s ci/settings.xml"
+  DOCKER_IMAGE: "${CI_REGISTRY}/tjma/scelus/scelus-api"
+  JAVA_VERSION: "21"
+
+# ── Cache Maven ───────────────────────────────────────────────────────────────
+.maven-cache: &maven-cache
+  cache:
+    key: "$CI_PROJECT_ID-maven"
+    paths:
+      - .m2/repository/
+    policy: pull-push
+
+# ── Build ─────────────────────────────────────────────────────────────────────
+build:
+  stage: build
+  image: maven:3.9-eclipse-temurin-21-alpine
+  <<: *maven-cache
+  script:
+    - mvn $MAVEN_CLI_OPTS compile
+  artifacts:
+    paths:
+      - target/
+    expire_in: 1 hour
+
+# ── Testes unitários ──────────────────────────────────────────────────────────
+test:unit:
+  stage: test
+  image: maven:3.9-eclipse-temurin-21-alpine
+  <<: *maven-cache
+  script:
+    - mvn $MAVEN_CLI_OPTS test
+  artifacts:
+    reports:
+      junit:
+        - target/surefire-reports/*.xml
+    paths:
+      - target/surefire-reports/
+    expire_in: 7 days
+  coverage: '/Total.*?([0-9]{1,3})%/'
+
+# ── Docker Build + Push ───────────────────────────────────────────────────────
+docker:build:
+  stage: publish
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - echo "$TJMA_MAVEN_CREDS_USR" > /dev/null # credenciais só via --secret abaixo
+    - printf '<settings><servers><server><id>tjma-public</id><username>%s</username><password>%s</password></server></servers></settings>' "$TJMA_MAVEN_CREDS_USR" "$TJMA_MAVEN_CREDS_PWD" > /tmp/settings.xml
+    - docker build --secret id=maven_settings,src=/tmp/settings.xml
+                   -t $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA
+                   -t $DOCKER_IMAGE:latest .
+    - rm -f /tmp/settings.xml
+    - docker push $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $DOCKER_IMAGE:latest
+  only:
+    - main
+  needs:
+    - test:unit
+
+# ── Deploy Desenvolvimento ────────────────────────────────────────────────────
+deploy:desenv:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - apk add --no-cache openssh-client
+    - ssh -o StrictHostKeyChecking=no $DESENV_SSH_USER@$DESENV_HOST
+        "docker pull $DOCKER_IMAGE:latest &&
+         docker stop scelus-api || true &&
+         docker rm scelus-api || true &&
+         docker run -d --name scelus-api
+           --network tjma-net
+           -p 8081:8080
+           -e SPRING_PROFILES_ACTIVE=desenv
+           -e TJMA_AMBIENTE=DESENV
+           -e POSTGRES_DB_PASSWORD=$POSTGRES_DB_PASSWORD
+           -e SENTINELA_DB_PASSWORD=$SENTINELA_DB_PASSWORD
+           $DOCKER_IMAGE:latest"
+  only:
+    - develop
+  environment:
+    name: desenvolvimento
+    url: https://sistemasd.tjma.jus.br/scelus-api
+  needs:
+    - docker:build

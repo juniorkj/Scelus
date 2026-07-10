@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Settings de CI para resolver dependências do grupo Nexus TJMA (maven-public).
+    As credenciais nunca ficam neste arquivo — vêm das variáveis de ambiente do
+    pipeline (TJMA_MAVEN_CREDS_USR/PWD, configuradas como CI/CD variables protegidas).
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <servers>
+        <server>
+            <id>tjma-public</id>
+            <username>${env.TJMA_MAVEN_CREDS_USR}</username>
+            <password>${env.TJMA_MAVEN_CREDS_PWD}</password>
+        </server>
+    </servers>
+</settings>

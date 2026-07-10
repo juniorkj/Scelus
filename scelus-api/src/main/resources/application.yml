@@ -1,0 +1,128 @@
+##############################################################################
+# scelus-api — application.yml
+# Configuração base (sobreposta por application-{profile}.yml)
+##############################################################################
+
+spring:
+  application:
+    name: scelus-api
+
+  # ── Spring Boot Autoconfigure: desabilitar autoconfigs conflitantes ──────────
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration
+
+  # ── JPA global ───────────────────────────────────────────────────────────────
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate       # nunca alterar o schema em produção
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Fortaleza
+        generate_statistics: false
+
+  # ── Cache (Ehcache — sessões Sentinela) ───────────────────────────────────────
+  cache:
+    type: jcache
+    jcache:
+      config: classpath:ehcache.xml
+
+  # ── Jackson ──────────────────────────────────────────────────────────────────
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    time-zone: America/Fortaleza
+
+# ── Servidor ──────────────────────────────────────────────────────────────────
+server:
+  port: 8080
+  servlet:
+    context-path: /scelus-api
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# ── Sentinela SSO (infra-spring) ──────────────────────────────────────────────
+sentinela:
+  enabled: true
+  id-sistema: scelus   # nome exato cadastrado no Oracle Sentinela
+  url-base: https://sistemasd.tjma.jus.br/sentinela/  # Default para desenvolvimento
+
+# Propriedade lida diretamente pelo Ambiente (infra-spring/seguranca.properties)
+id_sistema: scelus
+
+# ── TJMA Ambiente ─────────────────────────────────────────────────────────────
+tjma:
+  ambiente: ${TJMA_AMBIENTE:desenv-local}
+
+# ── Springdoc / Swagger UI ────────────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+    try-it-out-enabled: true
+  packages-to-scan: br.jus.tjma.scelus
+  show-actuator: false
+
+# ── Actuator ──────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+logging:
+  level:
+    br.jus.tjma.scelus: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
+
+---
+##############################################################################
+# Profile: local — datasources apontando para ambiente de desenvolvimento
+# Ative com: -Dspring.profiles.active=local
+##############################################################################
+spring:
+  config:
+    activate:
+      on-profile: local
+  import: optional:classpath:application-local.yml
+
+---
+# Profile: homolog — ambiente de homologação TJMA
+spring:
+  config:
+    activate:
+      on-profile: homolog
+sentinela:
+  url-base: https://sistemash.tjma.jus.br/sentinela/
+tjma:
+  ambiente: homologacao
+
+---
+# Profile: prod — ambiente de produção TJMA
+spring:
+  config:
+    activate:
+      on-profile: prod
+sentinela:
+  url-base: https://sistemas.tjma.jus.br/sentinela/
+tjma:
+  ambiente: producao
