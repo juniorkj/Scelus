@@ -23,8 +23,34 @@ export const MENU: MenuItem[] = [
     icon: 'House',
     path: '/home',
   },
-
-  // Adicione os itens dos módulos de domínio do Scelus aqui conforme forem criados.
+  {
+    label: 'Crimes do Processo',
+    icon: 'FileText',
+    objetoSentinela: 'CrimeController',
+    children: [
+      {
+        label: 'Consultar Crimes',
+        icon: 'Search',
+        path: '/crimes',
+        objetoSentinela: 'CrimeController',
+        permissoes: 'LEITURA',
+      },
+      {
+        label: 'Cadastrar Crime',
+        icon: 'FilePlus',
+        path: '/crimes/new',
+        objetoSentinela: 'CrimeController',
+        permissoes: 'INCLUSAO',
+      },
+    ],
+  },
+  {
+    label: 'Medidas Protetivas',
+    icon: 'Shield',
+    path: '/mpus',
+    objetoSentinela: 'MpuController',
+    permissoes: 'LEITURA',
+  },
 ];
 
 export const tjMenuProvider = (): Provider => {

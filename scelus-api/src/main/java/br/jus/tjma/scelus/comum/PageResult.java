@@ -1,8 +1,7 @@
 package br.jus.tjma.scelus.comum;
 
-import org.springframework.data.domain.Page;
-
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 /**
  * Wrapper de resposta paginada compatível com {@code @tjma/angular} TjTable.
@@ -22,13 +21,7 @@ import java.util.List;
  * }</pre>
  */
 public record PageResult<T>(
-        List<T> result,
-        long totalCount,
-        int pagina,
-        int tamanho,
-        int totalPaginas,
-        boolean ultima
-) {
+        List<T> result, long totalCount, int pagina, int tamanho, int totalPaginas, boolean ultima) {
     public static <T> PageResult<T> of(Page<T> page) {
         return new PageResult<>(
                 page.getContent(),
@@ -36,7 +29,6 @@ public record PageResult<T>(
                 page.getNumber(),
                 page.getSize(),
                 page.getTotalPages(),
-                page.isLast()
-        );
+                page.isLast());
     }
 }

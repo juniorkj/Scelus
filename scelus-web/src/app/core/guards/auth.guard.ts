@@ -1,6 +1,12 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
-import { TjAuthService, UserContext, TjGlobalService, TjSnackBar, TjSnackBarConfig } from '@tjma/angular-21';
+import {
+  TjAuthService,
+  UserContext,
+  TjGlobalService,
+  TjSnackBar,
+  TjSnackBarConfig,
+} from '@tjma/angular-21';
 
 /**
  * Guard funcional para validar permissões do Sentinela em rotas GET.
@@ -45,7 +51,7 @@ export const authGuard: CanActivateFn = (route, state) => {
 
   router.navigate(['/acesso-negado'], {
     state: { message: config.description },
-    replaceUrl: true
+    replaceUrl: true,
   });
 
   return false;

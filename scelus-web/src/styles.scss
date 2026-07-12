@@ -1,6 +1,23 @@
 // ── Scelus Web — Estilos globais ──────────────────────────────────────────────
 @use '@tjma/angular-21/styles.scss' as tj;
 
+// ── Bootstrap (grid + utilitários + componentes de apoio) ────────────────────
+// O reboot e os botões NÃO são importados para não conflitar com o design
+// system @tjma (botões usam TjButton: tj-button-primary, tj-button-secondary...).
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/variables-dark';
+@import 'bootstrap/scss/maps';
+@import 'bootstrap/scss/mixins';
+@import 'bootstrap/scss/root';
+@import 'bootstrap/scss/grid';
+@import 'bootstrap/scss/tables';
+@import 'bootstrap/scss/badge';
+@import 'bootstrap/scss/alert';
+@import 'bootstrap/scss/helpers';
+@import 'bootstrap/scss/utilities';
+@import 'bootstrap/scss/utilities/api';
+
 // ── Variáveis customizadas do sistema Scelus ──────────────────────────────────
 :root {
   --tpl-auth-bg-opacity: 0.5;
@@ -10,7 +27,8 @@
 }
 
 // ── Layout base ───────────────────────────────────────────────────────────────
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   font-family: 'Roboto', 'Helvetica Neue', sans-serif;
@@ -86,5 +104,19 @@ html, body {
 .tj-snack-bar.danger {
   .mat-mdc-snackbar-surface {
     background-color: var(--tj-danger-v600) !important;
+  }
+}
+
+// ── Ajuste de Largura dos Inputs nos Grids ──────────────────────────────────
+// Garante o alinhamento de tamanho e responsividade padrão dos componentes corporativos.
+tj-input,
+tj-select,
+tj-date-picker,
+tj-search-field {
+  display: block;
+  width: 100%;
+
+  mat-form-field {
+    width: 100% !important;
   }
 }

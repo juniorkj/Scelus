@@ -1,0 +1,96 @@
+<tj-search-field-dialog-content [client]="this">
+  <tj-filters [client]="this" [semHeader]="true">
+    <div class="row g-2">
+      <div class="col-md-4">
+        <tj-input
+          label="Nº da MPU"
+          name="numeroMpu"
+          [(ngModel)]="searchParams['numeroMpu']"
+          placeholder="Número da MPU..."></tj-input>
+      </div>
+      <div class="col-md-4">
+        <tj-input
+          label="Número do Processo"
+          name="numeroUnico"
+          [(ngModel)]="searchParams['numeroUnico']"
+          placeholder="Número único (CNJ)..."></tj-input>
+      </div>
+      <div class="col-md-4">
+        <tj-select
+          label="Concedida?"
+          name="concedida"
+          [(ngModel)]="searchParams['concedida']"
+          [options]="[
+            { label: 'Sim', value: 'S' },
+            { label: 'Não', value: 'N' },
+          ]"
+          placeholder="Todas"></tj-select>
+      </div>
+    </div>
+  </tj-filters>
+
+  <tj-table
+    #tjTable
+    [client]="this"
+    [columns]="columns"
+    [forSelection]="true"
+    [(tjItemsSelecionados)]="itemsSelecionados">
+    <table mat-table [dataSource]="tjTable.dataSource.result">
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef>{{ columns.id }}</th>
+        <td
+          mat-cell
+          *matCellDef="let element"
+          tj-row-selection
+          [tjLinhaSelecaoSomenteUm]="true"
+          [tjRowSelectionElement]="element">
+          {{ element.id }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="numeroMpu">
+        <th mat-header-cell *matHeaderCellDef>{{ columns.numeroMpu }}</th>
+        <td mat-cell *matCellDef="let element">
+          {{ element.numeroMpu || '—' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="numeroUnico">
+        <th mat-header-cell *matHeaderCellDef>{{ columns.numeroUnico }}</th>
+        <td mat-cell *matCellDef="let element">
+          {{ element.numeroUnico || '—' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="dataDecisao">
+        <th mat-header-cell *matHeaderCellDef>{{ columns.dataDecisao }}</th>
+        <td mat-cell *matCellDef="let element">
+          {{ element.dataDecisao | date: 'dd/MM/yyyy' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="concedida">
+        <th mat-header-cell *matHeaderCellDef>{{ columns.concedida }}</th>
+        <td mat-cell *matCellDef="let element">
+          <span
+            class="badge"
+            [class.bg-success]="element.concedida === 'S'"
+            [class.bg-secondary]="element.concedida === 'N'">
+            {{ element.concedida === 'S' ? 'Sim' : 'Não' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="tjTable.columnKeys"></tr>
+      <tr mat-row *matRowDef="let row; columns: tjTable.columnKeys"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td
+          class="mat-cell text-center py-4"
+          [attr.colspan]="tjTable.columnKeys.length">
+          Nenhuma medida protetiva de urgência localizada.
+        </td>
+      </tr>
+    </table>
+  </tj-table>
+</tj-search-field-dialog-content>

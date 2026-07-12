@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "postgres-scelus": {
+      "command": "python",
+      "args": ["tools/mcp/mcp-postgres-scelus.py"],
+      "env": {
+        "POSTGRES_HOST": "posdleg.tjma.jus.br",
+        "POSTGRES_PORT": "5432",
+        "POSTGRES_DB": "dba_scelus",
+        "POSTGRES_USER": "dba_scelus",
+        "POSTGRES_PASSWORD": "dba_scelus"
+      }
+    },
+    "oracle-sentinela-scelus": {
+      "command": "python",
+      "args": ["tools/mcp/mcp-oracle-scelus.py"],
+      "env": {
+        "ORACLE_USER": "dba_sentinela",
+        "ORACLE_PASSWORD": "dba_sentinela",
+        "ORACLE_DSN": "oradpjma:1521/pjma",
+        "ORACLE_THICK_MODE": "false"
+      }
+    }
+  }
+}

@@ -1,3 +1,312 @@
-.home-page {
+:host {
+  display: block;
+}
+
+// Animação de Entrada
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Overlay de carregamento
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+// Hero/Boas-vindas
+.dashboard-hero {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px 32px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  .bg-primary-light {
+    background-color: rgba(30, 64, 175, 0.08);
+  }
+
+  .hero-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+    letter-spacing: -0.025em;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 0;
+    max-width: 75ch;
+  }
+}
+
+// Atalhos rápidos (Shortcut Cards)
+.shortcut-card {
+  display: flex;
+  align-items: flex-start;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  height: 100%;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.05),
+      0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    border-color: #cbd5e1;
+
+    .shortcut-icon {
+      transform: scale(1.05);
+    }
+  }
+
+  .shortcut-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    margin-right: 16px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+
+    tj-icon {
+      font-size: 20px;
+    }
+
+    &.icon-blue {
+      background-color: #eff6ff;
+      color: #1d4ed8;
+    }
+    &.icon-green {
+      background-color: #f0fdf4;
+      color: #15803d;
+    }
+    &.icon-purple {
+      background-color: #faf5ff;
+      color: #7e22ce;
+    }
+    &.icon-orange {
+      background-color: #fff7ed;
+      color: #c2410c;
+    }
+  }
+
+  .shortcut-body {
+    h6 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+
+    p {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-bottom: 0;
+      line-height: 1.4;
+    }
+  }
+}
+
+// KPI Cards
+.kpi-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+
+  &.border-left-blue {
+    border-left: 4px solid #3b82f6;
+  }
+  &.border-left-purple {
+    border-left: 4px solid #a855f7;
+  }
+  &.border-left-green {
+    border-left: 4px solid #10b981;
+  }
+  &.border-left-orange {
+    border-left: 4px solid #f97316;
+  }
+
+  .kpi-content {
+    position: relative;
+    z-index: 2;
+
+    .kpi-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+
+    .kpi-meta {
+      font-size: 0.775rem;
+      display: flex;
+      align-items: center;
+    }
+  }
+
+  .kpi-icon-bg {
+    position: absolute;
+    right: 12px;
+    bottom: -8px;
+    font-size: 72px;
+    color: #f1f5f9;
+    z-index: 1;
+    pointer-events: none;
+    line-height: 1;
+
+    tj-icon {
+      font-size: 80px;
+      opacity: 0.6;
+    }
+  }
+}
+
+// Painéis de Dados
+.dashboard-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   padding: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+
+  .panel-header {
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 14px;
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-view-all {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #2563eb;
+      text-decoration: none;
+      transition: color 0.15s ease;
+
+      &:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+      }
+    }
+  }
+
+  // Tabela interna
+  .table {
+    thead th {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 8px;
+    }
+
+    tbody td {
+      font-size: 0.85rem;
+      color: #334155;
+      padding: 12px 8px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .clickable-row {
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+
+      &:hover {
+        background-color: #f8fafc;
+      }
+    }
+  }
+
+  // Preview de changelog
+  .changelog-preview {
+    max-height: 310px;
+    font-size: 0.85rem;
+    color: #475569;
+    line-height: 1.6;
+    padding-right: 4px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    // Estilos do HTML renderizado do changelog
+    ::ng-deep {
+      h1,
+      h2,
+      h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 14px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 4px;
+      }
+      ul {
+        padding-left: 18px;
+        margin-bottom: 12px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      p {
+        margin-bottom: 10px;
+      }
+    }
+  }
 }

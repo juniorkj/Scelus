@@ -1,12 +1,11 @@
 package br.jus.tjma.scelus.comum;
 
 import br.jus.tjma.infraspring.sentinela.authz.UsuarioContextContainer;
+import java.util.Collections;
+import java.util.Set;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
-
-import java.util.Collections;
-import java.util.Set;
 
 /**
  * Wrapper injetável sobre o {@link br.jus.tjma.infraspring.seguranca.UsuarioContext} da infra-spring.

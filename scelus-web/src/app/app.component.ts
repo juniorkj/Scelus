@@ -51,10 +51,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
       const sentinelaUrl = environment.sentinelaUrl;
       const sistemaId = environment.sistemaId;
-      const base = sentinelaUrl.endsWith('/') ? sentinelaUrl.slice(0, -1) : sentinelaUrl;
+      const base = sentinelaUrl.endsWith('/')
+        ? sentinelaUrl.slice(0, -1)
+        : sentinelaUrl;
 
       // Redireciona para o logout centralizado do TJMA
-      window.location.assign(`${base}/LogoutAction.logout.mtw?sistema=${sistemaId}`);
+      window.location.assign(
+        `${base}/LogoutAction.logout.mtw?sistema=${sistemaId}`
+      );
     };
   }
 

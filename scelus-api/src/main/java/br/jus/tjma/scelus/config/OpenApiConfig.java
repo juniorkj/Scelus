@@ -27,7 +27,8 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Scelus API — TJMA")
-                        .description("""
+                        .description(
+                                """
                                 API REST do Sistema Scelus do Tribunal de Justiça do Maranhão.
 
                                 **Autenticação:** Centralizada no Sentinela (SSO TJMA).
@@ -40,12 +41,11 @@ public class OpenApiConfig {
                                 .name("DTI — TJMA")
                                 .email("dti@tjma.jus.br")
                                 .url("https://www.tjma.jus.br"))
-                        .license(new License()
-                                .name("Uso interno TJMA")
-                                .url("https://www.tjma.jus.br")))
+                        .license(new License().name("Uso interno TJMA").url("https://www.tjma.jus.br")))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
                 .components(new Components()
-                        .addSecuritySchemes(SECURITY_SCHEME_NAME,
+                        .addSecuritySchemes(
+                                SECURITY_SCHEME_NAME,
                                 new SecurityScheme()
                                         .name("Seguranca-Token")
                                         .type(SecurityScheme.Type.APIKEY)

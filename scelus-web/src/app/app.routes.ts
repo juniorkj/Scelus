@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { TjAuthTemplate } from '@tjma/angular-21';
 
+import { authGuard } from './core/guards/auth.guard';
+
 export const routes: Routes = [
   {
     path: '',
@@ -19,25 +21,59 @@ export const routes: Routes = [
           ),
         title: 'Início — Scelus',
       },
+      {
+        path: 'crimes',
+        canActivate: [authGuard],
+        data: { objetoSentinela: 'CrimeController', permissoes: 'LEITURA' },
+        loadComponent: () =>
+          import('./features/consultar-crimes/pesquisar/consultar-crimes-pesquisar.component').then(
+            m => m.ConsultarCrimesPesquisarComponent
+          ),
+        title: 'Consultar Crimes do Processo — Scelus',
+      },
+      {
+        path: 'crimes/:id',
+        canActivate: [authGuard],
+        data: { objetoSentinela: 'CrimeController', permissoes: 'LEITURA' },
+        loadComponent: () =>
+          import('./features/consultar-crimes/manter/consultar-crimes-manter.component').then(
+            m => m.ConsultarCrimesManterComponent
+          ),
+        title: 'Manter Crime do Processo — Scelus',
+      },
 
-      // ── Módulos de domínio do Scelus vão entrar aqui, seguindo o padrão:
-      // {
-      //   path: 'exemplo',
-      //   canActivate: [authGuard],
-      //   data: { objetoSentinela: 'ExemploController', permissoes: 'LEITURA' },
-      //   loadComponent: () =>
-      //     import('./features/exemplo/pesquisar/exemplo-pesquisar.component').then(
-      //       m => m.ExemploPesquisarComponent
-      //     ),
-      //   title: 'Exemplo — Scelus',
-      // },
-
+      {
+        path: 'mpus',
+        canActivate: [authGuard],
+        data: { objetoSentinela: 'MpuController', permissoes: 'LEITURA' },
+        loadComponent: () =>
+          import('./features/mpus/pesquisar/mpus-pesquisar.component').then(
+            m => m.MpusPesquisarComponent
+          ),
+        title: 'Medidas Protetivas de Urgência — Scelus',
+      },
+      {
+        path: 'mpus/:id',
+        canActivate: [authGuard],
+        data: { objetoSentinela: 'MpuController', permissoes: 'LEITURA' },
+        loadComponent: () =>
+          import('./features/mpus/manter/mpus-manter.component').then(
+            m => m.MpusManterComponent
+          ),
+        title: 'Manter Medida Protetiva — Scelus',
+      },
+      {
+        path: 'changelog',
+        loadChildren: () =>
+          import('./features/changelog/changelog.routes').then(
+            m => m.CHANGELOG_ROUTES
+          ),
+        title: 'Change Log — Scelus',
+      },
       {
         path: 'acesso-negado',
         loadComponent: () =>
-          import('@tjma/angular-21').then(
-            m => m.TjAcessoNegadoComponent
-          ),
+          import('@tjma/angular-21').then(m => m.TjAcessoNegadoComponent),
         title: 'Acesso Negado — Scelus',
       },
       {

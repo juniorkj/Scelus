@@ -1,0 +1,136 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Scelus API — Testes dos CSUs (dados reais do banco DEV — posdleg/dba_scelus)
+# Uso: VS Code REST Client ou IntelliJ HTTP Client.
+#
+# Autenticação: as rotas exigem token do Sentinela. Faça login pelo frontend
+# (http://localhost:4200) e copie o token do header das requisições, ou use a
+# variável abaixo.
+#
+# Dados de teste validados em 11/07/2026:
+#   Processo PJe (com vítima e acusado): 0825056-56.2023.8.10.0029
+#     parte 16435981 (polo A) = ADRIANA MARTINS BATISTA — 024.500.133-69 (vítima)
+#     parte 18181915 (polo P) = GILVAN MELO SOUSA — 580.714.233-00 (acusado)
+#   Polos:           1=ATIVO, 2=PASSIVO
+#   Tipos vínculo:   1=Cônjuge ... 4=Ex-companheiro(a) ... 10=Outro
+#   Justificativas:  1=Risco à integridade física ... 5=Determinação judicial
+#   CEPs:            1=65010-000, 2=65015-430, 3=65045-260, 4=65065-545, 5=65110-000
+# ═══════════════════════════════════════════════════════════════════════════
+
+@host = http://localhost:8080/scelus-api
+@token = COLE_AQUI_O_TOKEN_DO_SENTINELA
+
+### ── Domínios (combos do frontend) ─────────────────────────────────────────
+GET {{host}}/api/dominios/polos
+Authorization: {{token}}
+
+###
+GET {{host}}/api/dominios/tipos-vinculo
+Authorization: {{token}}
+
+###
+GET {{host}}/api/dominios/justificativas-inclusao-mpu
+Authorization: {{token}}
+
+###
+GET {{host}}/api/dominios/ceps?cep=65
+Authorization: {{token}}
+
+### ── CSU002 (passo 1): Buscar processo e partes no PJe ─────────────────────
+GET {{host}}/api/processos-pje?numero=0825056-56.2023.8.10.0029
+Authorization: {{token}}
+
+### ── CSU002 (passo 2): Cadastrar o crime ───────────────────────────────────
+# Vítima = ADRIANA (parte 16435981, polo ATIVO=1)
+# Acusado = GILVAN (parte 18181915, polo PASSIVO=2)
+POST {{host}}/api/crimes
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "numeroProcesso": "0825056-56.2023.8.10.0029",
+  "codigoAssunto": 14234,
+  "dataFato": "2026-06-15T20:30:00",
+  "idCep": 1,
+  "medidaProtetiva": "S",
+  "vitima": {
+    "idParte": 16435981,
+    "idPolo": 1,
+    "idCep": 2
+  },
+  "acusado": {
+    "idParte": 18181915,
+    "idPolo": 2,
+    "possuiAntecedentes": 1,
+    "reincidente": 0,
+    "observacaoAntecedentes": "Registro anterior de ameaça (teste)"
+  },
+  "idTipoVinculo": 4,
+  "observacaoVinculo": "Ex-companheiro da vítima (teste)"
+}
+
+### ── CSU001: Consultar crimes (sem filtro) ──────────────────────────────────
+GET {{host}}/api/crimes?_limit=10&_offset=0
+Authorization: {{token}}
+
+### CSU001: filtro por número do processo
+GET {{host}}/api/crimes?_limit=10&_offset=0&numeroProcesso=0825056-56.2023.8.10.0029
+Authorization: {{token}}
+
+### CSU001: filtro por nome da vítima (resolvido via PJe/dblink)
+GET {{host}}/api/crimes?_limit=10&_offset=0&nomeVitima=ADRIANA
+Authorization: {{token}}
+
+### CSU001: detalhe do fato (usar o idFatoOcorrido retornado no POST)
+GET {{host}}/api/crimes/1
+Authorization: {{token}}
+
+### ── CSU008 (passo 1): Cadastrar uma MPU ───────────────────────────────────
+POST {{host}}/api/mpus
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "legislacaoFundamento": "Lei 11.340/2006, art. 22, III — proibição de aproximação da vítima",
+  "dataDecisao": "2026-06-20T10:00:00",
+  "concedida": "S",
+  "dataIntimacaoAcusado": "2026-06-21T14:00:00",
+  "dataIntimacaoVitima": "2026-06-21T09:00:00",
+  "dataCienciaVitima": "2026-06-21T09:30:00",
+  "pedidoDesistencia": "N",
+  "inqueritoInstaurado": "S",
+  "observacoes": "Distância mínima de 300 metros (teste)",
+  "numeroMpu": "MPU-2026-0001",
+  "numeroUnico": "0825056-56.2023.8.10.0029"
+}
+
+### CSU008: Consultar MPUs (alimenta o modal seletor)
+GET {{host}}/api/mpus?_limit=10&_offset=0
+Authorization: {{token}}
+
+### CSU008: filtrar MPUs concedidas
+GET {{host}}/api/mpus?_limit=10&_offset=0&concedida=S
+Authorization: {{token}}
+
+### ── CSU008 (passo 2): Vincular MPU ao fato ocorrido ───────────────────────
+# Usar o idFatoOcorrido do POST /api/crimes e o idMpu do POST /api/mpus
+POST {{host}}/api/crimes/1/mpus
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "idMpu": 1,
+  "idJustificativaInclusaoMpu": 1,
+  "observacaoJustificativa": "Vínculo criado em teste de homologação do CSU008"
+}
+
+### CSU008: Listar MPUs vinculadas ao fato
+GET {{host}}/api/crimes/1/mpus
+Authorization: {{token}}
+
+### CSU008: Remover vínculo (usar o id retornado no vínculo)
+DELETE {{host}}/api/crimes/1/mpus/1
+Authorization: {{token}}
+
+### ── Change Log ─────────────────────────────────────────────────────────────
+GET {{host}}/api/changelog
+Authorization: {{token}}

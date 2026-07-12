@@ -1,4 +1,242 @@
-<section class="home-page">
-  <h1>Bem-vindo(a) ao Scelus, {{ nomeUsuario() }}</h1>
-  <p>Esta é a página inicial do sistema. Os módulos de domínio aparecerão aqui.</p>
-</section>
+<tj-page [navegacao]="navigation()">
+  <!-- Carregamento -->
+  <div *ngIf="carregando()" class="loading-overlay">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Carregando painel...</span>
+    </div>
+    <p class="mt-2 text-muted">Carregando painel de controle...</p>
+  </div>
+
+  <div *ngIf="!carregando()" class="dashboard-content animate-fade-in">
+    <!-- Hero / Boas-vindas -->
+    <div class="dashboard-hero mb-4">
+      <span class="badge bg-primary-light text-primary mb-2 px-3 py-2 font-mono"
+        >SCELUS TJMA</span
+      >
+      <h2 class="hero-title">Olá, {{ nomeUsuario() }}!</h2>
+      <p class="hero-subtitle text-muted">
+        Bem-vindo ao Scelus, o sistema unificado do TJMA para monitoramento de
+        crimes, processos judiciais e gestão de Medidas Protetivas de Urgência
+        (MPU).
+      </p>
+    </div>
+
+    <!-- Seção de Atalhos Rápidos -->
+    <div class="section-container mb-4">
+      <h5 class="section-header-title mb-3">
+        <tj-icon icon="LayoutGrid" class="me-2 text-primary"></tj-icon>
+        Acesso Rápido
+      </h5>
+      <div class="row g-3">
+        <!-- Card 1 -->
+        <div class="col-lg-3 col-md-6">
+          <div class="shortcut-card" [routerLink]="['/crimes']">
+            <div class="shortcut-icon icon-blue">
+              <tj-icon icon="FileSearch"></tj-icon>
+            </div>
+            <div class="shortcut-body">
+              <h6>Consultar Crimes</h6>
+              <p>Filtrar e visualizar crimes e processos cadastrados.</p>
+            </div>
+          </div>
+        </div>
+        <!-- Card 2 -->
+        <div class="col-lg-3 col-md-6">
+          <div class="shortcut-card" [routerLink]="['/crimes', 'new']">
+            <div class="shortcut-icon icon-green">
+              <tj-icon icon="FilePlus"></tj-icon>
+            </div>
+            <div class="shortcut-body">
+              <h6>Novo Fato Ocorrido</h6>
+              <p>Importar processos do PJe e cadastrar novos fatos.</p>
+            </div>
+          </div>
+        </div>
+        <!-- Card 3 -->
+        <div class="col-lg-3 col-md-6">
+          <div class="shortcut-card" [routerLink]="['/mpus']">
+            <div class="shortcut-icon icon-purple">
+              <tj-icon icon="ShieldAlert"></tj-icon>
+            </div>
+            <div class="shortcut-body">
+              <h6>Ver Medidas (MPU)</h6>
+              <p>Consultar e gerenciar Medidas Protetivas de Urgência.</p>
+            </div>
+          </div>
+        </div>
+        <!-- Card 4 -->
+        <div class="col-lg-3 col-md-6">
+          <div class="shortcut-card" [routerLink]="['/mpus', 'new']">
+            <div class="shortcut-icon icon-orange">
+              <tj-icon icon="ShieldPlus"></tj-icon>
+            </div>
+            <div class="shortcut-body">
+              <h6>Registrar MPU</h6>
+              <p>Cadastrar novas decisões de medidas protetivas decretadas.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estatísticas / Indicadores -->
+    <div class="section-container mb-4">
+      <h5 class="section-header-title mb-3">
+        <tj-icon icon="TrendingUp" class="me-2 text-primary"></tj-icon>
+        Estatísticas do Sistema
+      </h5>
+      <div class="row g-3">
+        <!-- KPI 1 -->
+        <div class="col-md-3">
+          <div class="kpi-card border-left-blue">
+            <div class="kpi-content">
+              <span class="kpi-label">Fatos Ocorridos</span>
+              <h3 class="kpi-value">{{ totalCrimes() }}</h3>
+              <span class="kpi-meta text-muted"
+                >Crimes vinculados a processos</span
+              >
+            </div>
+            <div class="kpi-icon-bg">
+              <tj-icon icon="FileText"></tj-icon>
+            </div>
+          </div>
+        </div>
+        <!-- KPI 2 -->
+        <div class="col-md-3">
+          <div class="kpi-card border-left-purple">
+            <div class="kpi-content">
+              <span class="kpi-label">Medidas Protetivas (MPU)</span>
+              <h3 class="kpi-value">{{ totalMpus() }}</h3>
+              <span class="kpi-meta text-muted"
+                >Total decretadas no sistema</span
+              >
+            </div>
+            <div class="kpi-icon-bg">
+              <tj-icon icon="Shield"></tj-icon>
+            </div>
+          </div>
+        </div>
+        <!-- KPI 3 -->
+        <div class="col-md-3">
+          <div class="kpi-card border-left-green">
+            <div class="kpi-content">
+              <span class="kpi-label">MPUs Concedidas</span>
+              <h3 class="kpi-value text-success">{{ mpusConcedidas() }}</h3>
+              <span class="kpi-meta text-success">
+                <tj-icon icon="Check" class="me-1"></tj-icon>
+                {{
+                  totalMpus() > 0
+                    ? ((mpusConcedidas() / totalMpus()) * 100 | number: '1.0-1')
+                    : 0
+                }}% do total
+              </span>
+            </div>
+            <div class="kpi-icon-bg">
+              <tj-icon icon="ShieldCheck"></tj-icon>
+            </div>
+          </div>
+        </div>
+        <!-- KPI 4 -->
+        <div class="col-md-3">
+          <div class="kpi-card border-left-orange">
+            <div class="kpi-content">
+              <span class="kpi-label">MPUs Não Concedidas</span>
+              <h3 class="kpi-value text-danger">{{ mpusNegadas() }}</h3>
+              <span class="kpi-meta text-muted">Indeferidas ou pendentes</span>
+            </div>
+            <div class="kpi-icon-bg">
+              <tj-icon icon="ShieldX"></tj-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divisão: Últimos Crimes e Changelog -->
+    <div class="row g-4">
+      <!-- Lado Esquerdo: Últimos Crimes -->
+      <div class="col-lg-7">
+        <div class="dashboard-panel h-100">
+          <div
+            class="panel-header d-flex justify-content-between align-items-center mb-3">
+            <h6 class="panel-title mb-0">
+              <tj-icon icon="Clock" class="me-2 text-primary"></tj-icon>
+              Últimos Fatos Ocorridos Cadastrados
+            </h6>
+            <a [routerLink]="['/crimes']" class="btn-view-all">Ver todos</a>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Nº Processo</th>
+                  <th>Vítima</th>
+                  <th>Data do Fato</th>
+                  <th>MPU</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let c of ultimosCrimes()"
+                  class="clickable-row"
+                  [routerLink]="['/crimes', c.idFatoOcorrido]">
+                  <td class="font-mono text-primary fw-semibold">
+                    {{ c.numeroProcesso }}
+                  </td>
+                  <td>
+                    <div class="fw-semibold text-dark">
+                      {{ c.nomeVitima || 'Não informada' }}
+                    </div>
+                    <div class="small text-muted font-mono" *ngIf="c.cpfVitima">
+                      {{ c.cpfVitima | cpfCnpj }}
+                    </div>
+                  </td>
+                  <td class="text-muted">
+                    {{ c.dataFato | date: 'dd/MM/yyyy HH:mm' }}
+                  </td>
+                  <td>
+                    <span
+                      class="badge"
+                      [ngClass]="
+                        c.medidaProtetiva === 'S'
+                          ? 'bg-success'
+                          : 'bg-secondary'
+                      ">
+                      {{ c.medidaProtetiva === 'S' ? 'Sim' : 'Não' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="ultimosCrimes().length === 0">
+                  <td colspan="4" class="text-center py-4 text-muted">
+                    Nenhum fato ocorrido cadastrado recentemente.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lado Direito: Notas de Versão -->
+      <div class="col-lg-5">
+        <div class="dashboard-panel h-100 d-flex flex-column">
+          <div
+            class="panel-header d-flex justify-content-between align-items-center mb-3">
+            <h6 class="panel-title mb-0">
+              <tj-icon icon="Sparkles" class="me-2 text-primary"></tj-icon>
+              Atualizações do Sistema
+            </h6>
+            <a (click)="abrirChangelogDoMenu()" class="btn-view-all" style="cursor: pointer;"
+              >Ver changelog</a
+            >
+          </div>
+
+          <div
+            class="changelog-preview flex-grow-1 overflow-auto"
+            [innerHTML]="changelogHtml()"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</tj-page>

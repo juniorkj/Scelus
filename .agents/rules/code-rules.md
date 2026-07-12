@@ -105,6 +105,7 @@ description: Apply when writing, building, refactoring, or fixing code — proje
     * @since [data de criação]
     */
    ```
-
+5. **Preferência por Records Java:** Sempre dar preferência à utilização de classes `record` do Java 21 para DTOs, payloads e estruturas de dados imutáveis de transferência sempre que possível.
+6. **Responsividade e Grid (Bootstrap):** Utilizar e priorizar o sistema de grid do Bootstrap (`row`, `col-md-*`, `g-*`) e classes de utilitários do framework para responsividade, alinhamentos e dimensionamento de campos de formulário no frontend (seguindo o padrão estabelecido no projeto `frottas`).
 
 ---

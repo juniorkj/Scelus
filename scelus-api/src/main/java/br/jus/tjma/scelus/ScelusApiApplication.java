@@ -27,26 +27,25 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ComponentScan(
         basePackages = {"br.jus.tjma.scelus", "br.jus.tjma.infraspring.seguranca"},
         excludeFilters = {
-                @ComponentScan.Filter(
-                        type = FilterType.ASSIGNABLE_TYPE,
-                        classes = br.jus.tjma.infraspring.seguranca.WebConfig.class),
-                @ComponentScan.Filter(
-                        type = FilterType.ASSIGNABLE_TYPE,
-                        classes = br.jus.tjma.infraspring.seguranca.inject.UsuarioContextProducer.class)
-        }
-)
+            @ComponentScan.Filter(
+                    type = FilterType.ASSIGNABLE_TYPE,
+                    classes = br.jus.tjma.infraspring.seguranca.WebConfig.class),
+            @ComponentScan.Filter(
+                    type = FilterType.ASSIGNABLE_TYPE,
+                    classes = br.jus.tjma.infraspring.seguranca.inject.UsuarioContextProducer.class)
+        })
 // Importa explicitamente os beans do infra-spring que estão fora do pacote seguranca:
 //   - ServletConfig: registra LoginSentinelaServlet
 //   - SentinelaConfig: registra o SeguranaServletFilter
 //   - UsuarioContextService: valida tokens (usa seguranca.authz.* internamente)
 //   - ClienteSentinela: cliente HTTP do Sentinela SSO
 @Import({
-        br.jus.tjma.infraspring.config.ServletConfig.class,
-        br.jus.tjma.infraspring.sentinela.SentinelaConfig.class,
-        br.jus.tjma.infraspring.sentinela.authz.UsuarioContextService.class,
-        br.jus.tjma.infraspring.sentinela.authz.Ambiente.class,
-        br.jus.tjma.infraspring.sentinela.authz.SentinelaInterceptor.class,
-        br.jus.tjma.infraspring.sentinela.impl.ClienteSentinela.class
+    br.jus.tjma.infraspring.config.ServletConfig.class,
+    br.jus.tjma.infraspring.sentinela.SentinelaConfig.class,
+    br.jus.tjma.infraspring.sentinela.authz.UsuarioContextService.class,
+    br.jus.tjma.infraspring.sentinela.authz.Ambiente.class,
+    br.jus.tjma.infraspring.sentinela.authz.SentinelaInterceptor.class,
+    br.jus.tjma.infraspring.sentinela.impl.ClienteSentinela.class
 })
 public class ScelusApiApplication {
 

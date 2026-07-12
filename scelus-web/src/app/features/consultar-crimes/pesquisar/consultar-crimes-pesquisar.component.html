@@ -1,0 +1,433 @@
+<tj-page [navegacao]="navigation()">
+  <tj-filters [client]="this">
+    <div class="row g-2">
+      <!-- Filtros Principais -->
+      <div class="col-md-4 col-sm-6">
+        <tj-input
+          label="Número do Processo"
+          [(ngModel)]="searchParams['numeroProcesso']"
+          name="numeroProcesso"
+          mask="0000000-00.0000.0.00.0000"
+          placeholder="Ex: 0800123-45.2026.8.10.0001">
+          <tj-icon input-prefix icon="FileText"></tj-icon>
+        </tj-input>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <tj-input
+          label="Código do Assunto"
+          type="number"
+          [(ngModel)]="searchParams['codigoAssunto']"
+          name="codigoAssunto"
+          placeholder="Ex: 14234">
+        </tj-input>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <tj-input
+          label="Data do Fato"
+          type="date"
+          [(ngModel)]="searchParams['dataFato']"
+          name="dataFato">
+        </tj-input>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <tj-select
+          label="Possui MPU?"
+          [(ngModel)]="searchParams['medidaProtetiva']"
+          name="medidaProtetiva"
+          [options]="[
+            { label: 'Sim', value: 'S' },
+            { label: 'Não', value: 'N' },
+          ]"
+          placeholder="Todos"></tj-select>
+      </div>
+    </div>
+    <div class="row g-2 mt-1">
+      <!-- Filtros de Partes (Vítima) -->
+      <div class="col-md-4 col-sm-6">
+        <tj-input
+          label="Nome da Vítima"
+          [(ngModel)]="searchParams['nomeVitima']"
+          name="nomeVitima"
+          placeholder="Nome da vítima...">
+          <tj-icon input-prefix icon="User"></tj-icon>
+        </tj-input>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <tj-input
+          label="CPF da Vítima"
+          [(ngModel)]="searchParams['cpfVitima']"
+          name="cpfVitima"
+          mask="000.000.000-00"
+          placeholder="Ex: 000.000.000-00">
+        </tj-input>
+      </div>
+      <!-- Filtros de Partes (Acusado) -->
+      <div class="col-md-4 col-sm-6">
+        <tj-input
+          label="Nome do Acusado"
+          [(ngModel)]="searchParams['nomeAcusado']"
+          name="nomeAcusado"
+          placeholder="Nome do acusado...">
+          <tj-icon input-prefix icon="UserCheck"></tj-icon>
+        </tj-input>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <tj-input
+          label="CPF do Acusado"
+          [(ngModel)]="searchParams['cpfAcusado']"
+          name="cpfAcusado"
+          mask="000.000.000-00"
+          placeholder="Ex: 000.000.000-00">
+        </tj-input>
+      </div>
+    </div>
+    <div class="row g-2 mt-1 align-items-end">
+      <div class="col-md-3 col-sm-6">
+        <tj-select
+          label="Tipo de Vínculo"
+          name="tipoVinculo"
+          [options]="dominios['tiposVinculo']"
+          [(ngModel)]="searchParams['tipoVinculo']"
+          placeholder="Todos"></tj-select>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <tj-select
+          label="Consequência da Violência"
+          name="idConsequenciaViolencia"
+          [options]="dominios['consequenciasViolencia']"
+          [(ngModel)]="searchParams['idConsequenciaViolencia']"
+          placeholder="Todas"></tj-select>
+      </div>
+      <div class="col-md-5 d-flex gap-2 justify-content-end">
+        <button type="button" tj-button-ghost-sm (click)="toggleAvancados()">
+          <tj-icon icon="SlidersHorizontal"></tj-icon>
+          {{
+            mostrarAvancados ? 'Ocultar Filtros Avançados' : 'Filtros Avançados'
+          }}
+        </button>
+        @if (mostrarAvancados) {
+          <button type="button" tj-button-ghost-sm (click)="toggleCompostos()">
+            <tj-icon icon="Layers"></tj-icon>
+            {{
+              mostrarCompostos
+                ? 'Ocultar Filtros Compostos'
+                : 'Filtros Avançados Compostos'
+            }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- SF01 — Filtros Avançados (Tela 1.2) -->
+    @if (mostrarAvancados) {
+      <hr class="mt-3" />
+      <div class="row g-3">
+        <div class="col-md-4">
+          <h6 class="fw-semibold">Vítima</h6>
+          <div class="row g-2">
+            @for (campo of avancadosVitima; track campo.chave) {
+              <div class="col-md-6">
+                <tj-select
+                  [label]="campo.label"
+                  [name]="campo.chave"
+                  [options]="dominios[campo.dominio]"
+                  [(ngModel)]="searchParams[campo.chave]"
+                  placeholder="Todos"></tj-select>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="col-md-4">
+          <h6 class="fw-semibold">Acusado</h6>
+          <div class="row g-2">
+            @for (campo of avancadosAcusado; track campo.chave) {
+              <div class="col-md-6">
+                <tj-select
+                  [label]="campo.label"
+                  [name]="campo.chave"
+                  [options]="dominios[campo.dominio]"
+                  [(ngModel)]="searchParams[campo.chave]"
+                  placeholder="Todos"></tj-select>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="col-md-4">
+          <h6 class="fw-semibold">MPU</h6>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <tj-input
+                label="Data da Decisão"
+                type="date"
+                name="dataDecisaoMpu"
+                [(ngModel)]="searchParams['dataDecisaoMpu']"></tj-input>
+            </div>
+            <div class="col-md-6">
+              <tj-input
+                label="Legislação"
+                name="legislacaoMpu"
+                [(ngModel)]="searchParams['legislacaoMpu']"
+                placeholder="Ex: Lei 11.340"></tj-input>
+            </div>
+            <div class="col-md-6">
+              <tj-select
+                label="Foi Concedida?"
+                name="concedidaMpu"
+                [options]="[
+                  { label: 'Sim', value: 'S' },
+                  { label: 'Não', value: 'N' },
+                ]"
+                [(ngModel)]="searchParams['concedidaMpu']"
+                placeholder="Todas"></tj-select>
+            </div>
+            <div class="col-md-6">
+              <tj-select
+                label="Há Pedido de Desistência?"
+                name="pedidoDesistenciaMpu"
+                [options]="[
+                  { label: 'Sim', value: 'S' },
+                  { label: 'Não', value: 'N' },
+                ]"
+                [(ngModel)]="searchParams['pedidoDesistenciaMpu']"
+                placeholder="Todos"></tj-select>
+            </div>
+            <div class="col-md-6">
+              <tj-input
+                label="Intimação do Acusado"
+                type="date"
+                name="dataIntimacaoAcusadoMpu"
+                [(ngModel)]="
+                  searchParams['dataIntimacaoAcusadoMpu']
+                "></tj-input>
+            </div>
+            <div class="col-md-6">
+              <tj-input
+                label="Intimação da Vítima"
+                type="date"
+                name="dataIntimacaoVitimaMpu"
+                [(ngModel)]="searchParams['dataIntimacaoVitimaMpu']"></tj-input>
+            </div>
+            <div class="col-md-6">
+              <tj-input
+                label="Ciência do Acusado"
+                type="date"
+                name="dataCienciaAcusadoMpu"
+                [(ngModel)]="searchParams['dataCienciaAcusadoMpu']"></tj-input>
+            </div>
+            <div class="col-md-6">
+              <tj-input
+                label="Ciência da Vítima"
+                type="date"
+                name="dataCienciaVitimaMpu"
+                [(ngModel)]="searchParams['dataCienciaVitimaMpu']"></tj-input>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- SF02 — Filtros Avançados Compostos (Tela 1.3): OR dentro da mesma lista (RN001.02) -->
+    @if (mostrarAvancados && mostrarCompostos) {
+      <hr class="mt-3" />
+      <div class="row g-3">
+        <div class="col-md-6">
+          <h6 class="fw-semibold">Vítima — Filtros Compostos</h6>
+          @for (campo of compostosVitima; track campo.chave) {
+            <div class="row g-2 align-items-end mt-1">
+              <div class="col-9">
+                <tj-select
+                  [label]="campo.label"
+                  [name]="'sel_' + campo.chave"
+                  [options]="dominios[campo.dominio]"
+                  [(ngModel)]="selecaoComposto[campo.chave]"
+                  placeholder="Selecione para adicionar"></tj-select>
+              </div>
+              <div class="col-3">
+                <button
+                  type="button"
+                  tj-button-secondary-sm
+                  title="Adicionar ao filtro"
+                  (click)="adicionarComposto(campo.chave)">
+                  <tj-icon icon="Plus"></tj-icon>
+                </button>
+              </div>
+              @if (valoresComposto(campo.chave).length) {
+                <div class="col-12">
+                  @for (v of valoresComposto(campo.chave); track v) {
+                    <span
+                      class="badge bg-secondary me-1"
+                      role="button"
+                      title="Remover"
+                      (click)="removerComposto(campo.chave, v)">
+                      {{ descricaoDominio(campo.dominio, v) }} ✕
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div class="col-md-6">
+          <h6 class="fw-semibold">Acusado — Filtros Compostos</h6>
+          @for (campo of compostosAcusado; track campo.chave) {
+            <div class="row g-2 align-items-end mt-1">
+              <div class="col-9">
+                <tj-select
+                  [label]="campo.label"
+                  [name]="'sel_' + campo.chave"
+                  [options]="dominios[campo.dominio]"
+                  [(ngModel)]="selecaoComposto[campo.chave]"
+                  placeholder="Selecione para adicionar"></tj-select>
+              </div>
+              <div class="col-3">
+                <button
+                  type="button"
+                  tj-button-secondary-sm
+                  title="Adicionar ao filtro"
+                  (click)="adicionarComposto(campo.chave)">
+                  <tj-icon icon="Plus"></tj-icon>
+                </button>
+              </div>
+              @if (valoresComposto(campo.chave).length) {
+                <div class="col-12">
+                  @for (v of valoresComposto(campo.chave); track v) {
+                    <span
+                      class="badge bg-secondary me-1"
+                      role="button"
+                      title="Remover"
+                      (click)="removerComposto(campo.chave, v)">
+                      {{ descricaoDominio(campo.dominio, v) }} ✕
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </tj-filters>
+
+  <tj-table
+    #tjTable
+    [client]="this"
+    [columns]="columns()"
+    title="Consulta de Crimes do Processo"
+    description="Pesquisa de fatos ocorridos e crimes associados aos processos judiciais">
+    <table mat-table [dataSource]="tjTable.dataSource.result">
+      <!-- Coluna: Processo -->
+      <ng-container matColumnDef="numeroProcesso">
+        <th mat-header-cell *matHeaderCellDef>
+          {{ columns().numeroProcesso }}
+        </th>
+        <td mat-cell *matCellDef="let c">
+          <div class="fw-bold text-primary">{{ c.numeroProcesso }}</div>
+        </td>
+      </ng-container>
+
+      <!-- Coluna: Código do Assunto -->
+      <ng-container matColumnDef="codigoAssunto">
+        <th mat-header-cell *matHeaderCellDef>{{ columns().codigoAssunto }}</th>
+        <td mat-cell *matCellDef="let c">
+          <div>{{ c.codigoAssunto }}</div>
+        </td>
+      </ng-container>
+
+      <!-- Coluna: Data do Fato -->
+      <ng-container matColumnDef="dataFato">
+        <th mat-header-cell *matHeaderCellDef>{{ columns().dataFato }}</th>
+        <td mat-cell *matCellDef="let c">
+          <div>{{ c.dataFato | date: 'dd/MM/yyyy HH:mm' }}</div>
+        </td>
+      </ng-container>
+
+      <!-- Coluna: MPU -->
+      <ng-container matColumnDef="medidaProtetiva">
+        <th mat-header-cell *matHeaderCellDef>
+          {{ columns().medidaProtetiva }}
+        </th>
+        <td mat-cell *matCellDef="let c">
+          <span
+            class="badge"
+            [class.bg-success]="c.medidaProtetiva === 'S'"
+            [class.bg-secondary]="c.medidaProtetiva === 'N'">
+            {{ c.medidaProtetiva === 'S' ? 'Sim' : 'Não' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Coluna: Vítima -->
+      <ng-container matColumnDef="nomeVitima">
+        <th mat-header-cell *matHeaderCellDef>{{ columns().nomeVitima }}</th>
+        <td mat-cell *matCellDef="let c">
+          <div class="fw-semibold">{{ c.nomeVitima || 'Não informada' }}</div>
+          @if (c.cpfVitima) {
+            <div class="small text-muted font-mono">
+              {{ c.cpfVitima | cpfCnpj }}
+            </div>
+          }
+        </td>
+      </ng-container>
+
+      <!-- Coluna: Acusado -->
+      <ng-container matColumnDef="nomeAcusado">
+        <th mat-header-cell *matHeaderCellDef>{{ columns().nomeAcusado }}</th>
+        <td mat-cell *matCellDef="let c">
+          <div class="fw-semibold">{{ c.nomeAcusado || 'Não informado' }}</div>
+          @if (c.cpfAcusado) {
+            <div class="small text-muted font-mono">
+              {{ c.cpfAcusado | cpfCnpj }}
+            </div>
+          }
+        </td>
+      </ng-container>
+
+      <!-- Coluna: Vínculo -->
+      <ng-container matColumnDef="tipoVinculo">
+        <th mat-header-cell *matHeaderCellDef>{{ columns().tipoVinculo }}</th>
+        <td mat-cell *matCellDef="let c">
+          <div>{{ c.tipoVinculo || 'Sem vínculo cadastrado' }}</div>
+        </td>
+      </ng-container>
+
+      <!-- Coluna: Deficiência da Vítima -->
+      <ng-container matColumnDef="deficienciaVitima">
+        <th mat-header-cell *matHeaderCellDef>
+          {{ columns().deficienciaVitima }}
+        </th>
+        <td mat-cell *matCellDef="let c">
+          <div>{{ c.deficienciaVitima || '—' }}</div>
+        </td>
+      </ng-container>
+
+      <!-- Coluna: Ações -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td
+          mat-cell
+          *matCellDef="let c"
+          tj-row-actions
+          [tjLinhaAcaoClient]="this"
+          [showEdit]="true"
+          [showView]="true"
+          [showDelete]="true"
+          [tjRowActionElement]="c"
+          [tjLinhaAcaoParamId]="'idFatoOcorrido'"></td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="tjTable.columnKeys"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: tjTable.columnKeys"
+        (dblclick)="navigateToEdit(row.idFatoOcorrido)"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td
+          class="mat-cell text-center py-4"
+          [attr.colspan]="tjTable.columnKeys.length">
+          Nenhum crime ou fato ocorrido localizado para o processo.
+        </td>
+      </tr>
+    </table>
+  </tj-table>
+</tj-page>
