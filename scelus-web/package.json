@@ -28,7 +28,7 @@
     "@angular/platform-browser-dynamic": "^21.2.7",
     "@angular/router": "^21.2.7",
     "@popperjs/core": "^2.11.8",
-    "@tjma/angular-21": "0.0.1",
+    "@tjma/angular-21": "file:../infra-angular-21/dist/tjma/tjma-angular-21-0.0.1.tgz",
     "bootstrap": "^5.3.8",
     "date-fns": "^4.1.0",
     "lodash-es": "^4.17.21",

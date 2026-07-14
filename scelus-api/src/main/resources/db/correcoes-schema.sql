@@ -389,3 +389,42 @@ CREATE OR REPLACE FUNCTION pkg_fato_ocorrido.fn_fato_ocorrido_del(p_int_fato_oco
      END;
  END;
  $function$;
+
+-- ── Nova função pkg_processo.fn_processo_assunto_pje_con (Tela 2.1 do CSU002 — assuntos do processo via PJe) ──
+CREATE OR REPLACE FUNCTION pkg_processo.fn_processo_assunto_pje_con(p_int_processo_id integer)
+RETURNS TABLE(int_codigo_assunto integer, str_descricao_assunto character varying)
+LANGUAGE plpgsql
+AS $function$
+
+	/*
+		Vai no PJE e retorna os assuntos vinculados ao processo para uso do Sistema SCELUS
+
+		Autor: Fco Antonio S. Júnior - PDCase
+		Data: 20260713
+	*/
+
+declare
+    v_sql text;
+begin
+
+    v_sql := '
+        select ass.cd_assunto_trf as int_codigo_assunto,
+               ass.ds_assunto_trf as str_descricao_assunto
+        from client.tb_processo_assunto prcass
+        left join client.tb_assunto_trf ass on prcass.id_assunto_trf = ass.id_assunto_trf
+        where prcass.id_processo_trf = ' || quote_nullable(p_int_processo_id) || '
+        order by ass.ds_assunto_trf
+    ';
+
+    return query
+    select *
+    from dblink(
+        'pje',
+        v_sql
+    ) as t (
+        int_codigo_assunto integer,
+        str_descricao_assunto character varying
+    );
+
+end;
+$function$;

@@ -1,12 +1,27 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { TjCrudService } from '@tjma/angular-21';
-import { MpuVinculada, VinculoMpuRequest } from './consultar-crimes.model';
+import {
+  CadastroCrimeCompletoRequest,
+  CadastroCrimeCompletoResponse,
+  MpuVinculada,
+  VinculoMpuRequest,
+} from './consultar-crimes.model';
 
 @Injectable({ providedIn: 'root' })
 export class ConsultarCrimesService extends TjCrudService {
   constructor() {
     super('/api/crimes');
+  }
+
+  /** Envia o wizard completo do CSU002 (persistência diferida — RN01). */
+  cadastrarCompleto(
+    request: CadastroCrimeCompletoRequest
+  ): Observable<CadastroCrimeCompletoResponse> {
+    return this._http.post<CadastroCrimeCompletoResponse>(
+      `${this.backendUrl}/api/crimes/completo`,
+      request
+    );
   }
 
   /** Lista as MPUs vinculadas ao fato ocorrido (CSU008). */

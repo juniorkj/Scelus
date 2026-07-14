@@ -99,7 +99,9 @@ export class HomePageComponent implements OnInit {
   }
 
   abrirChangelogDoMenu(): void {
-    const btn = document.querySelector('.tj-change-log button') as HTMLButtonElement;
+    const btn = document.querySelector(
+      '.tj-change-log button'
+    ) as HTMLButtonElement;
     if (btn) {
       btn.click();
     } else {

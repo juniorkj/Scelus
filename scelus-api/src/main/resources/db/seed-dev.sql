@@ -259,3 +259,50 @@ SELECT d FROM (VALUES
     ('Gravidez ou infecções decorrentes de violência sexual')
 ) AS t(d)
 WHERE NOT EXISTS (SELECT 1 FROM public.tb_tipo_consequencia_violencia);
+
+-- ── 8. Configuração Familiar (CSU002 Tela 2.4) ───────────────────────────────
+INSERT INTO public.tb_tipo_configuracao_familiar (str_tipo_config_familiar)
+SELECT d FROM (VALUES
+    ('Nuclear'),
+    ('Monoparental'),
+    ('Extensa/Ampliada'),
+    ('Reconstituída'),
+    ('Unipessoal'),
+    ('Homoafetiva'),
+    ('Outra')
+) AS t(d)
+WHERE NOT EXISTS (SELECT 1 FROM public.tb_tipo_configuracao_familiar);
+
+-- ── 9. Tipo de Comunicante do Fato (CSU002 Tela 2.8) ─────────────────────────
+INSERT INTO public.tb_tipo_comunicante (str_tipo_comunicante)
+SELECT d FROM (VALUES
+    ('Vítima'),
+    ('Testemunha'),
+    ('Familiar'),
+    ('Vizinho(a)'),
+    ('Policial'),
+    ('Conselho Tutelar'),
+    ('Escola'),
+    ('Unidade de Saúde'),
+    ('Anônimo'),
+    ('Outro')
+) AS t(d)
+WHERE NOT EXISTS (SELECT 1 FROM public.tb_tipo_comunicante);
+
+-- ── 10. Escuta Judicial / Depoimento Especial (Lei 13.431/2017) ──────────────
+INSERT INTO public.tb_escuta_judicial (str_escuta_judicial)
+SELECT d FROM (VALUES
+    ('Depoimento Especial'),
+    ('Escuta Especializada'),
+    ('Depoimento Sem Dano')
+) AS t(d)
+WHERE NOT EXISTS (SELECT 1 FROM public.tb_escuta_judicial);
+
+-- ── 11. Posição na Prole (matriz prole × posição, CSU002 Tela 2.5) ───────────
+-- Combinação numérica: para cada tamanho de prole (1 a 8 filhos), todas as
+-- posições possíveis (1ª a última). Ex.: prole=3, posição=2 = "2º de 3 filhos".
+INSERT INTO public.tb_posicao_prole (int_prole, int_posicao)
+SELECT prole, posicao
+  FROM generate_series(1, 8) AS prole,
+       LATERAL generate_series(1, prole) AS posicao
+WHERE NOT EXISTS (SELECT 1 FROM public.tb_posicao_prole);

@@ -1,0 +1,1245 @@
+<tj-page
+  [back]="true"
+  [navegacao]="navigation"
+  title="Cadastrar Crime do Processo">
+  <tj-card [nonExpansive]="true">
+    <tj-stepper
+      #stepper
+      [linear]="false"
+      (selectionChange)="onStepChange($event.selectedIndex)">
+      <!-- Ícone customizado: passo concluído (check verde) -->
+      <ng-template matStepperIcon="done" let-index="index">
+        <tj-icon icon="Check"></tj-icon>
+      </ng-template>
+
+      <!-- Passo 1: Processo (PJe) -->
+      <tj-step
+        label="Processo"
+        [completed]="passoCompleto(0)"
+        [hasError]="erroPassoProcesso">
+        <div class="row g-2 align-items-end mt-2">
+          <div class="col-md-5">
+            <tj-input
+              label="Número do Processo (CNJ)"
+              name="numeroProcesso"
+              [required]="true"
+              mask="0000000-00.0000.0.00.0000"
+              [(ngModel)]="numeroProcesso"
+              placeholder="Ex: 0800123-45.2026.8.10.0001">
+              <tj-icon input-prefix icon="FileText"></tj-icon>
+            </tj-input>
+          </div>
+          <div class="col-md-3">
+            <button
+              type="button"
+              tj-button-primary
+              [disabled]="buscandoPje"
+              (click)="buscarProcessoPje()">
+              {{ buscandoPje ? 'Buscando...' : 'Buscar no PJe' }}
+            </button>
+          </div>
+        </div>
+
+        @if (erroPje) {
+          <div class="alert alert-warning mt-2">{{ erroPje }}</div>
+        }
+
+        @if (processoPje) {
+          <div class="alert alert-info mt-2">
+            Processo <strong>{{ processoPje.numeroUnico }}</strong> localizado
+            no PJe — {{ processoPje.partes.length }} parte(s) encontrada(s).
+          </div>
+
+          <!-- Tela 2.1: Processo, Polo Ativo*, Polo Passivo*, Possui Sentença* -->
+          <div class="row g-2 mt-2">
+            <div class="col-md-6">
+              <tj-textarea
+                label="Polo Ativo"
+                name="poloAtivo"
+                [readonly]="true"
+                [ngModel]="poloAtivoNomes"
+                [rows]="2"></tj-textarea>
+            </div>
+            <div class="col-md-6">
+              <tj-textarea
+                label="Polo Passivo"
+                name="poloPassivo"
+                [readonly]="true"
+                [ngModel]="poloPassivoNomes"
+                [rows]="2"></tj-textarea>
+            </div>
+          </div>
+
+          <div class="row g-2 mt-1">
+            <div class="col-md-3">
+              <tj-input
+                label="Possui Sentença"
+                name="possuiSentenca"
+                [readonly]="true"
+                [ngModel]="
+                  processoPje.possuiSentenca === 'S' ? 'Sim' : 'Não'
+                "></tj-input>
+            </div>
+          </div>
+
+          @if (processoPje.assuntos && !processoPje.assuntos.length) {
+            <div class="alert alert-warning mt-2">
+              Nenhum assunto foi localizado para este processo no PJe.
+            </div>
+          }
+        }
+
+        <div class="d-flex justify-content-end mt-3">
+          <button
+            type="button"
+            tj-button-primary
+            matStepperNext
+            [disabled]="erroPassoProcesso">
+            Avançar
+          </button>
+        </div>
+      </tj-step>
+
+      <!-- Passo 2 (Tela 2.2): Crimes Cometidos -->
+      <tj-step
+        label="Crimes Cometidos"
+        [completed]="passoCompleto(1)"
+        [hasError]="erroPassoCrimesCometidos">
+        <h6 class="section-title mt-2">
+          <tj-icon icon="Gavel"></tj-icon> Crimes Cometidos
+        </h6>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-5">
+            <tj-select
+              label="Tipo de Crime (Assunto)"
+              name="crimeCometidoAssunto"
+              [required]="true"
+              [options]="assuntoOptions"
+              [(ngModel)]="novoCrimeCometido.codigoAssunto"
+              placeholder="Selecione o assunto"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-date-picker
+              label="Início da Tipificação"
+              name="dataInicioTipificacao"
+              [required]="true"
+              [(ngModel)]="
+                novoCrimeCometido.dataInicioTipificacao
+              "></tj-date-picker>
+          </div>
+          <div class="col-md-2">
+            <tj-date-picker
+              label="Fim da Tipificação"
+              name="dataFimTipificacao"
+              [(ngModel)]="
+                novoCrimeCometido.dataFimTipificacao
+              "></tj-date-picker>
+          </div>
+          <div class="col-md-2">
+            <button
+              type="button"
+              tj-button-secondary
+              (click)="adicionarCrimeCometido()">
+              Adicionar
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive mt-2">
+          <table class="table table-sm table-hover">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Assunto</th>
+                <th scope="col">Início Tipificação</th>
+                <th scope="col">Fim Tipificação</th>
+                <th scope="col" class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of crimesCometidosList; track $index) {
+                <tr>
+                  <td>{{ descricaoAssunto(c.codigoAssunto) }}</td>
+                  <td>{{ c.dataInicioTipificacao | date: 'dd/MM/yyyy' }}</td>
+                  <td>{{ c.dataFimTipificacao | date: 'dd/MM/yyyy' }}</td>
+                  <td class="text-end">
+                    <button
+                      type="button"
+                      tj-button-danger-sm
+                      (click)="removerCrimeCometido($index)">
+                      <tj-icon icon="Trash2"></tj-icon>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-2">
+                    Nenhum crime cometido cadastrado.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+          <button type="button" tj-button-secondary matStepperPrevious>
+            Voltar
+          </button>
+          <button
+            type="button"
+            tj-button-primary
+            matStepperNext
+            [disabled]="erroPassoCrimesCometidos">
+            Avançar
+          </button>
+        </div>
+      </tj-step>
+
+      <!-- Passo 3: Vítima -->
+      <tj-step
+        label="Vítima"
+        [completed]="passoCompleto(2)"
+        [hasError]="erroPassoVitima">
+        <h6 class="section-title mt-2">
+          <tj-icon icon="User"></tj-icon> Dados da Vítima
+        </h6>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <tj-select
+              label="Parte (PJe)"
+              name="idParteVitima"
+              [required]="true"
+              [options]="parteOptions"
+              [(ngModel)]="vitima.idParte"
+              (ngModelChange)="onParteSelecionada('vitima', $event)"
+              placeholder="Selecione a vítima"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Polo Processual"
+              name="idPoloVitima"
+              [required]="true"
+              [options]="dominios['polos']"
+              [(ngModel)]="vitima.idPolo"
+              placeholder="Selecione o polo"></tj-select>
+          </div>
+        </div>
+
+        <div class="row g-2 mt-1">
+          <div class="col-md-3">
+            <tj-select
+              label="Estado Civil"
+              name="idEstadoCivilVitima"
+              [options]="dominios['estadosCivis']"
+              [(ngModel)]="vitima.idEstadoCivil"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Escolaridade"
+              name="idEscolaridadeVitima"
+              [options]="dominios['escolaridades']"
+              [(ngModel)]="vitima.idEscolaridade"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Renda"
+              name="idRendaVitima"
+              [options]="dominios['rendas']"
+              [(ngModel)]="vitima.idRenda"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Religião"
+              name="idReligiaoVitima"
+              [options]="dominios['religioes']"
+              [(ngModel)]="vitima.idReligiao"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-4">
+            <tj-select
+              label="Raça/Etnia"
+              name="idRacaEtniaVitima"
+              [options]="dominios['racasEtnias']"
+              [(ngModel)]="vitima.idRacaEtnia"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-4">
+            <tj-select
+              label="Escuta Judicial"
+              name="idEscutaJudicialVitima"
+              [options]="dominios['escutasJudiciais']"
+              [(ngModel)]="vitima.idEscutaJudicial"
+              placeholder="Selecione (opcional)"></tj-select>
+          </div>
+        </div>
+
+        <div class="row g-2 mt-1 align-items-end">
+          <div class="col-md-3">
+            <tj-select
+              label="Ocupações"
+              name="novaOcupacaoVitima"
+              [options]="dominios['ocupacoes']"
+              [(ngModel)]="novaOcupacaoVitima"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-1">
+            <button
+              type="button"
+              tj-button-secondary-sm
+              (click)="adicionarOcupacao('vitima')">
+              <tj-icon icon="Plus"></tj-icon>
+            </button>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Deficiências"
+              name="novaDeficienciaVitima"
+              [options]="dominios['deficiencias']"
+              [(ngModel)]="novaDeficienciaVitima"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-1">
+            <button
+              type="button"
+              tj-button-secondary-sm
+              (click)="adicionarDeficiencia('vitima')">
+              <tj-icon icon="Plus"></tj-icon>
+            </button>
+          </div>
+        </div>
+        <div class="row g-1 mb-2">
+          <div class="col-6">
+            @for (v of vitima.idsOcupacao; track v) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover ocupação"
+                (click)="removerOcupacao('vitima', v)">
+                {{ descricaoDominio('ocupacoes', v) }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+          <div class="col-6">
+            @for (v of vitima.idsDeficiencia; track v) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover deficiência"
+                (click)="removerDeficiencia('vitima', v)">
+                {{ descricaoDominio('deficiencias', v) }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <tj-select
+              label="Situação de Uso de Droga"
+              name="idSituacaoUsoDrogaVitima"
+              [options]="dominios['situacoesUsoDroga']"
+              [(ngModel)]="vitima.idSituacaoUsoDroga"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Drogas Utilizadas"
+              name="novaDrogaVitima"
+              [options]="dominios['drogas']"
+              [(ngModel)]="novaDrogaVitima"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-1">
+            <button
+              type="button"
+              tj-button-secondary-sm
+              (click)="adicionarDroga('vitima')">
+              <tj-icon icon="Plus"></tj-icon>
+            </button>
+          </div>
+        </div>
+        <div class="row g-1 mb-2">
+          <div class="col-12">
+            @for (v of vitima.idsDroga; track v) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover droga"
+                (click)="removerDroga('vitima', v)">
+                {{ descricaoDominio('drogas', v) }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <tj-input
+              label="Pesquisar CEP de Residência"
+              name="cepBuscaVitima"
+              mask="00000-000"
+              [(ngModel)]="cepBuscaVitima"
+              placeholder="Ex: 65010-000"></tj-input>
+          </div>
+          <div class="col-md-2">
+            <button
+              type="button"
+              tj-button-secondary
+              [disabled]="buscandoCepVitima"
+              (click)="buscarCepVitima()">
+              {{ buscandoCepVitima ? 'Buscando...' : 'Buscar CEP' }}
+            </button>
+          </div>
+          <div class="col-md-5">
+            <tj-select
+              label="CEP de Residência"
+              name="idCepVitima"
+              [required]="true"
+              [options]="cepOptionsVitima"
+              [(ngModel)]="vitima.idCep"
+              placeholder="Pesquise um CEP acima"></tj-select>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+          <button type="button" tj-button-secondary matStepperPrevious>
+            Voltar
+          </button>
+          <button
+            type="button"
+            tj-button-primary
+            matStepperNext
+            [disabled]="!vitima.idParte || !vitima.idCep">
+            Avançar
+          </button>
+        </div>
+      </tj-step>
+
+      <!-- Passo 4: Acusado -->
+      <tj-step
+        label="Acusado"
+        [completed]="passoCompleto(3)"
+        [hasError]="erroPassoAcusado">
+        <h6 class="section-title mt-2">
+          <tj-icon icon="UserCheck"></tj-icon> Dados do Acusado
+        </h6>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <tj-select
+              label="Parte (PJe)"
+              name="idParteAcusado"
+              [required]="true"
+              [options]="parteOptions"
+              [(ngModel)]="acusado.idParte"
+              (ngModelChange)="onParteSelecionada('acusado', $event)"
+              placeholder="Selecione o acusado"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Polo Processual"
+              name="idPoloAcusado"
+              [required]="true"
+              [options]="dominios['polos']"
+              [(ngModel)]="acusado.idPolo"
+              placeholder="Selecione o polo"></tj-select>
+          </div>
+          <div class="col-md-1">
+            <tj-radio
+              label="Antecedentes?"
+              name="possuiAntecedentes"
+              [toLineInForm]="true"
+              [options]="simNaoNumericoOptions"
+              [(ngModel)]="acusado.possuiAntecedentes"></tj-radio>
+          </div>
+          <div class="col-md-2">
+            <tj-radio
+              label="Reincidente?"
+              name="reincidente"
+              [toLineInForm]="true"
+              [options]="simNaoNumericoOptions"
+              [(ngModel)]="acusado.reincidente"></tj-radio>
+          </div>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-12">
+            <tj-textarea
+              label="Observações sobre Antecedentes"
+              name="observacaoAntecedentes"
+              [(ngModel)]="acusado.observacaoAntecedentes"></tj-textarea>
+          </div>
+        </div>
+
+        <div class="row g-2 mt-1">
+          <div class="col-md-3">
+            <tj-select
+              label="Estado Civil"
+              name="idEstadoCivilAcusado"
+              [options]="dominios['estadosCivis']"
+              [(ngModel)]="acusado.idEstadoCivil"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Escolaridade"
+              name="idEscolaridadeAcusado"
+              [options]="dominios['escolaridades']"
+              [(ngModel)]="acusado.idEscolaridade"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Renda"
+              name="idRendaAcusado"
+              [options]="dominios['rendas']"
+              [(ngModel)]="acusado.idRenda"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Religião"
+              name="idReligiaoAcusado"
+              [options]="dominios['religioes']"
+              [(ngModel)]="acusado.idReligiao"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-4">
+            <tj-select
+              label="Raça/Etnia"
+              name="idRacaEtniaAcusado"
+              [options]="dominios['racasEtnias']"
+              [(ngModel)]="acusado.idRacaEtnia"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-4">
+            <tj-select
+              label="Escuta Judicial"
+              name="idEscutaJudicialAcusado"
+              [options]="dominios['escutasJudiciais']"
+              [(ngModel)]="acusado.idEscutaJudicial"
+              placeholder="Selecione (opcional)"></tj-select>
+          </div>
+        </div>
+
+        <div class="row g-2 mt-1 align-items-end">
+          <div class="col-md-3">
+            <tj-select
+              label="Ocupações"
+              name="novaOcupacaoAcusado"
+              [options]="dominios['ocupacoes']"
+              [(ngModel)]="novaOcupacaoAcusado"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-1">
+            <button
+              type="button"
+              tj-button-secondary-sm
+              (click)="adicionarOcupacao('acusado')">
+              <tj-icon icon="Plus"></tj-icon>
+            </button>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Deficiências"
+              name="novaDeficienciaAcusado"
+              [options]="dominios['deficiencias']"
+              [(ngModel)]="novaDeficienciaAcusado"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-1">
+            <button
+              type="button"
+              tj-button-secondary-sm
+              (click)="adicionarDeficiencia('acusado')">
+              <tj-icon icon="Plus"></tj-icon>
+            </button>
+          </div>
+        </div>
+        <div class="row g-1 mb-2">
+          <div class="col-6">
+            @for (v of acusado.idsOcupacao; track v) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover ocupação"
+                (click)="removerOcupacao('acusado', v)">
+                {{ descricaoDominio('ocupacoes', v) }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+          <div class="col-6">
+            @for (v of acusado.idsDeficiencia; track v) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover deficiência"
+                (click)="removerDeficiencia('acusado', v)">
+                {{ descricaoDominio('deficiencias', v) }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <tj-select
+              label="Situação de Uso de Droga"
+              name="idSituacaoUsoDrogaAcusado"
+              [options]="dominios['situacoesUsoDroga']"
+              [(ngModel)]="acusado.idSituacaoUsoDroga"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Drogas Utilizadas"
+              name="novaDrogaAcusado"
+              [options]="dominios['drogas']"
+              [(ngModel)]="novaDrogaAcusado"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-1">
+            <button
+              type="button"
+              tj-button-secondary-sm
+              (click)="adicionarDroga('acusado')">
+              <tj-icon icon="Plus"></tj-icon>
+            </button>
+          </div>
+        </div>
+        <div class="row g-1 mb-2">
+          <div class="col-12">
+            @for (v of acusado.idsDroga; track v) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover droga"
+                (click)="removerDroga('acusado', v)">
+                {{ descricaoDominio('drogas', v) }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+          <button type="button" tj-button-secondary matStepperPrevious>
+            Voltar
+          </button>
+          <button
+            type="button"
+            tj-button-primary
+            matStepperNext
+            [disabled]="!acusado.idParte">
+            Avançar
+          </button>
+        </div>
+      </tj-step>
+
+      <!-- Passo 5: Benefícios & Configuração Familiar -->
+      <tj-step label="Benefícios" [completed]="passoCompleto(4)">
+        <h6 class="section-title mt-2">
+          <tj-icon icon="HandCoins"></tj-icon> Benefícios Assistenciais
+        </h6>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <tj-select
+              label="Tipo (Vítima)"
+              name="tipoBeneficioVitima"
+              [options]="dominios['tiposBeneficio']"
+              [(ngModel)]="novoBeneficioVitima.idTipoBeneficio"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-date-picker
+              label="Data de Início"
+              name="dataInicioBeneficioVitima"
+              [(ngModel)]="novoBeneficioVitima.dataInicio"></tj-date-picker>
+          </div>
+          <div class="col-md-2">
+            <button
+              type="button"
+              tj-button-secondary
+              (click)="adicionarBeneficio('vitima')">
+              Adicionar
+            </button>
+          </div>
+        </div>
+        <div class="row g-1 mb-2">
+          <div class="col-12">
+            @for (b of vitima.beneficios; track $index) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover benefício"
+                (click)="removerBeneficio('vitima', $index)">
+                {{ descricaoDominio('tiposBeneficio', b.idTipoBeneficio) }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <tj-select
+              label="Tipo (Acusado)"
+              name="tipoBeneficioAcusado"
+              [options]="dominios['tiposBeneficio']"
+              [(ngModel)]="novoBeneficioAcusado.idTipoBeneficio"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-date-picker
+              label="Data de Início"
+              name="dataInicioBeneficioAcusado"
+              [(ngModel)]="novoBeneficioAcusado.dataInicio"></tj-date-picker>
+          </div>
+          <div class="col-md-2">
+            <button
+              type="button"
+              tj-button-secondary
+              (click)="adicionarBeneficio('acusado')">
+              Adicionar
+            </button>
+          </div>
+        </div>
+        <div class="row g-1 mb-2">
+          <div class="col-12">
+            @for (b of acusado.beneficios; track $index) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover benefício"
+                (click)="removerBeneficio('acusado', $index)">
+                {{ descricaoDominio('tiposBeneficio', b.idTipoBeneficio) }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <hr />
+        <h6 class="section-title">
+          <tj-icon icon="Users"></tj-icon> Configuração Familiar (Vítima)
+        </h6>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <tj-select
+              label="Configuração Familiar"
+              name="tipoConfiguracaoFamiliar"
+              [options]="dominios['tiposConfiguracaoFamiliar']"
+              [(ngModel)]="novaConfiguracaoFamiliar.idTipoConfiguracaoFamiliar"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-date-picker
+              label="Data da Declaração"
+              name="dataDeclaracao"
+              [(ngModel)]="
+                novaConfiguracaoFamiliar.dataDeclaracao
+              "></tj-date-picker>
+          </div>
+          <div class="col-md-3">
+            <tj-input
+              label="Observações"
+              name="observacaoConfigFamiliar"
+              [(ngModel)]="novaConfiguracaoFamiliar.observacao"></tj-input>
+          </div>
+          <div class="col-md-2">
+            <button
+              type="button"
+              tj-button-secondary
+              (click)="adicionarConfiguracaoFamiliar()">
+              Adicionar
+            </button>
+          </div>
+        </div>
+        <div class="row g-1 mb-2">
+          <div class="col-12">
+            @for (c of vitima.configuracoesFamiliares; track $index) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover configuração familiar"
+                (click)="removerConfiguracaoFamiliar($index)">
+                {{
+                  descricaoDominio(
+                    'tiposConfiguracaoFamiliar',
+                    c.idTipoConfiguracaoFamiliar
+                  )
+                }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+          <button type="button" tj-button-secondary matStepperPrevious>
+            Voltar
+          </button>
+          <button type="button" tj-button-primary matStepperNext>
+            Avançar
+          </button>
+        </div>
+      </tj-step>
+
+      <!-- Passo 6: Vínculo -->
+      <tj-step label="Vínculo" [completed]="passoCompleto(5)">
+        <h6 class="section-title mt-2">
+          <tj-icon icon="Link"></tj-icon> Vínculo entre Vítima e Acusado
+        </h6>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <tj-select
+              label="Tipo de Vínculo"
+              name="idTipoVinculo"
+              [options]="dominios['tiposVinculo']"
+              [(ngModel)]="vinculo.idTipoVinculo"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-8">
+            <tj-textarea
+              label="Observação do Vínculo"
+              name="observacaoVinculo"
+              [(ngModel)]="vinculo.observacao"></tj-textarea>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+          <button type="button" tj-button-secondary matStepperPrevious>
+            Voltar
+          </button>
+          <button type="button" tj-button-primary matStepperNext>
+            Avançar
+          </button>
+        </div>
+      </tj-step>
+
+      <!-- Passo 7: Fato Ocorrido -->
+      <tj-step
+        label="Fato Ocorrido"
+        [completed]="passoCompleto(6)"
+        [hasError]="erroPassoFato">
+        <h6 class="section-title mt-2">
+          <tj-icon icon="Calendar"></tj-icon> Fato Ocorrido
+        </h6>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <tj-select
+              label="Crime"
+              name="fatoCodigoAssunto"
+              [required]="true"
+              [options]="crimeOptions"
+              [(ngModel)]="fatoCodigoAssunto"
+              placeholder="Selecione o crime"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-date-picker
+              label="Data do Fato"
+              name="dataFato"
+              [required]="true"
+              [(ngModel)]="dataFato"></tj-date-picker>
+          </div>
+          <div class="col-md-4">
+            <tj-radio
+              label="Possui Medida Protetiva?"
+              name="medidaProtetiva"
+              [required]="true"
+              [toLineInForm]="true"
+              [options]="simNaoOptions"
+              [(ngModel)]="medidaProtetiva"></tj-radio>
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <tj-input
+              label="Pesquisar CEP do Fato"
+              name="cepBuscaFato"
+              mask="00000-000"
+              [(ngModel)]="cepBuscaFato"
+              placeholder="Ex: 65010-000"></tj-input>
+          </div>
+          <div class="col-md-2">
+            <button
+              type="button"
+              tj-button-secondary
+              [disabled]="buscandoCepFato"
+              (click)="buscarCepFato()">
+              {{ buscandoCepFato ? 'Buscando...' : 'Buscar CEP' }}
+            </button>
+          </div>
+          <div class="col-md-5">
+            <tj-select
+              label="CEP do Local do Fato"
+              name="idCepFato"
+              [required]="true"
+              [options]="cepOptionsFato"
+              [(ngModel)]="fatoIdCep"
+              placeholder="Pesquise um CEP acima"></tj-select>
+          </div>
+        </div>
+
+        <hr />
+        <h6 class="section-title">
+          <tj-icon icon="Megaphone"></tj-icon> Comunicante(s) do Fato
+        </h6>
+        <div class="row g-2">
+          <div class="col-md-3">
+            <tj-input
+              label="Nome"
+              name="nomeComunicante"
+              [(ngModel)]="novoComunicante.nome"></tj-input>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Tipo"
+              name="tipoComunicante"
+              [options]="dominios['tiposComunicante']"
+              [(ngModel)]="novoComunicante.idTipoComunicante"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-input
+              label="Telefone"
+              name="telefoneComunicante"
+              [(ngModel)]="novoComunicante.telefone"></tj-input>
+          </div>
+          <div class="col-md-3">
+            <button
+              type="button"
+              tj-button-secondary
+              (click)="adicionarComunicante()">
+              Adicionar
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive mt-2">
+          <table class="table table-sm table-hover">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Nome</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Telefone</th>
+                <th scope="col" class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of comunicantes; track $index) {
+                <tr>
+                  <td>{{ c.nome }}</td>
+                  <td>
+                    {{
+                      descricaoDominio('tiposComunicante', c.idTipoComunicante)
+                    }}
+                  </td>
+                  <td>{{ c.telefone || '—' }}</td>
+                  <td class="text-end">
+                    <button
+                      type="button"
+                      tj-button-danger-sm
+                      (click)="removerComunicante($index)">
+                      <tj-icon icon="Trash2"></tj-icon>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-2">
+                    Nenhum comunicante adicionado.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+          <button type="button" tj-button-secondary matStepperPrevious>
+            Voltar
+          </button>
+          <button
+            type="button"
+            tj-button-primary
+            matStepperNext
+            [disabled]="erroPassoFato">
+            Avançar
+          </button>
+        </div>
+      </tj-step>
+
+      <!-- Passo 8: Consequências da Violência & Resumo -->
+      <tj-step label="Resumo" [completed]="passoCompleto(7)">
+        <h6 class="section-title mt-2">
+          <tj-icon icon="TriangleAlert"></tj-icon> Consequências da Violência
+          (opcional)
+        </h6>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <tj-select
+              label="Parte"
+              name="parteConsequencia"
+              [options]="opcoesPartes"
+              [(ngModel)]="novaConsequencia.chaveParte"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-3">
+            <tj-select
+              label="Tipo de Consequência"
+              name="tipoConsequencia"
+              [options]="dominios['consequenciasViolencia']"
+              [(ngModel)]="novaConsequencia.idTipoConsequenciaViolencia"
+              placeholder="Selecione"></tj-select>
+          </div>
+          <div class="col-md-4">
+            <tj-input
+              label="Observações"
+              name="observacaoConsequencia"
+              [(ngModel)]="novaConsequencia.observacao"></tj-input>
+          </div>
+          <div class="col-md-2">
+            <button
+              type="button"
+              tj-button-secondary
+              (click)="adicionarConsequencia()">
+              Adicionar
+            </button>
+          </div>
+        </div>
+        <div class="row g-1 mb-3">
+          <div class="col-12">
+            @for (c of consequencias; track $index) {
+              <span
+                class="badge badge-filtro me-1"
+                role="button"
+                title="Remover consequência"
+                (click)="removerConsequencia($index)">
+                {{
+                  descricaoDominio(
+                    'consequenciasViolencia',
+                    c.idTipoConsequenciaViolencia
+                  )
+                }}
+                <span aria-hidden="true">&times;</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <h6 class="section-title">
+          <tj-icon icon="ClipboardCheck"></tj-icon> Resumo Geral do Cadastro
+        </h6>
+
+        <div class="row g-3">
+          <!-- 1. Dados do Processo & Crimes Cometidos -->
+          <div class="col-md-6">
+            <div class="card h-100 border-light shadow-sm">
+              <div class="card-body">
+                <h6 class="card-title text-primary"><tj-icon icon="FileText" class="me-1"></tj-icon> Processo e Crimes</h6>
+                <div class="mb-2">
+                  <span class="small text-muted d-block">Número do Processo (CNJ)</span>
+                  <strong class="text-dark">{{ processoPje?.numeroUnico || '—' }}</strong>
+                </div>
+                <div>
+                  <span class="small text-muted d-block">Crimes Cometidos Tipificados</span>
+                  @if (crimesCometidosList.length) {
+                    <ul class="ps-3 mb-0 text-dark small">
+                      @for (c of crimesCometidosList; track $index) {
+                        <li>
+                          <strong>{{ c.codigoAssunto }}</strong> — 
+                          {{ c.dataInicioTipificacao | date: 'dd/MM/yyyy' }}
+                          @if (c.dataFimTipificacao) { até {{ c.dataFimTipificacao | date: 'dd/MM/yyyy' }} }
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <span class="text-muted small">Nenhum crime adicionado</span>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Vínculo e Fato Ocorrido -->
+          <div class="col-md-6">
+            <div class="card h-100 border-light shadow-sm">
+              <div class="card-body">
+                <h6 class="card-title text-primary"><tj-icon icon="Calendar" class="me-1"></tj-icon> Vínculo e Fato</h6>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Tipo de Vínculo</span>
+                    <span class="text-dark small fw-semibold">{{ descricaoDominio('tiposVinculo', vinculo.idTipoVinculo || 0) || 'Não informado' }}</span>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Data do Fato</span>
+                    <span class="text-dark small fw-semibold">{{ dataFato | date: 'dd/MM/yyyy' }}</span>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Possui MPU?</span>
+                    <span class="text-dark small fw-semibold">{{ medidaProtetiva === 'S' ? 'Sim' : 'Não' }}</span>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">CEP do Fato</span>
+                    <span class="text-dark small fw-semibold">{{ fatoIdCep || 'Não informado' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Dados da Vítima -->
+          <div class="col-md-6">
+            <div class="card border-light shadow-sm">
+              <div class="card-body">
+                <h6 class="card-title text-primary"><tj-icon icon="User" class="me-1"></tj-icon> Detalhes da Vítima</h6>
+                <div class="row g-2 text-dark small">
+                  <div class="col-12">
+                    <span class="small text-muted d-block">Polo no PJe</span>
+                    <strong>{{ descricaoDominio('polos', vitima.idPolo) }}</strong>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Estado Civil</span>
+                    <span>{{ descricaoDominio('estadosCivis', vitima.idEstadoCivil || 0) || '—' }}</span>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Escolaridade</span>
+                    <span>{{ descricaoDominio('escolaridades', vitima.idEscolaridade || 0) || '—' }}</span>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Renda</span>
+                    <span>{{ descricaoDominio('rendas', vitima.idRendaMensal || 0) || '—' }}</span>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Religião</span>
+                    <span>{{ descricaoDominio('religioes', vitima.idReligiao || 0) || '—' }}</span>
+                  </div>
+                  <div class="col-12">
+                    <span class="small text-muted d-block">CEP Residencial</span>
+                    <span>{{ vitima.idCep || '—' }}</span>
+                  </div>
+                  <div class="col-12">
+                    <span class="small text-muted d-block">Benefícios da Vítima</span>
+                    @if (vitima.beneficios?.length) {
+                      @for (b of vitima.beneficios; track $index) {
+                        <span class="badge bg-light text-dark border me-1">
+                          {{ descricaoDominio('tiposBeneficio', b.idTipoBeneficio || 0) }}
+                        </span>
+                      }
+                    } @else { <span class="text-muted">Nenhum</span> }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Dados do Acusado -->
+          <div class="col-md-6">
+            <div class="card border-light shadow-sm">
+              <div class="card-body">
+                <h6 class="card-title text-primary"><tj-icon icon="UserCheck" class="me-1"></tj-icon> Detalhes do Acusado</h6>
+                <div class="row g-2 text-dark small">
+                  <div class="col-12">
+                    <span class="small text-muted d-block">Polo no PJe</span>
+                    <strong>{{ descricaoDominio('polos', acusado.idPolo) }}</strong>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Estado Civil</span>
+                    <span>{{ descricaoDominio('estadosCivis', acusado.idEstadoCivil || 0) || '—' }}</span>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Escolaridade</span>
+                    <span>{{ descricaoDominio('escolaridades', acusado.idEscolaridade || 0) || '—' }}</span>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Renda</span>
+                    <span>{{ descricaoDominio('rendas', acusado.idRendaMensal || 0) || '—' }}</span>
+                  </div>
+                  <div class="col-6">
+                    <span class="small text-muted d-block">Religião</span>
+                    <span>{{ descricaoDominio('religioes', acusado.idReligiao || 0) || '—' }}</span>
+                  </div>
+                  <div class="col-12">
+                    <span class="small text-muted d-block">Antecedentes Criminais</span>
+                    <span class="fw-semibold">{{ acusado.antecedenteCriminal === 1 ? 'Sim' : 'Não' }}</span>
+                  </div>
+                  <div class="col-12">
+                    <span class="small text-muted d-block">Benefícios do Acusado</span>
+                    @if (acusado.beneficios?.length) {
+                      @for (b of acusado.beneficios; track $index) {
+                        <span class="badge bg-light text-dark border me-1">
+                          {{ descricaoDominio('tiposBeneficio', b.idTipoBeneficio || 0) }}
+                        </span>
+                      }
+                    } @else { <span class="text-muted">Nenhum</span> }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Comunicantes e Consequências -->
+          <div class="col-12">
+            <div class="card border-light shadow-sm">
+              <div class="card-body">
+                <div class="row g-3 text-dark small">
+                  <div class="col-md-6">
+                    <h6 class="card-title text-primary mb-2"><tj-icon icon="Users" class="me-1"></tj-icon> Comunicantes ({{ comunicantes.length }})</h6>
+                    @if (comunicantes.length) {
+                      <ul class="ps-3 mb-0">
+                        @for (com of comunicantes; track $index) {
+                          <li>{{ com.nome }} ({{ descricaoDominio('tiposComunicante', com.idTipoComunicante) }})</li>
+                        }
+                      </ul>
+                    } @else {
+                      <span class="text-muted">Nenhum comunicante adicionado</span>
+                    }
+                  </div>
+                  <div class="col-md-6">
+                    <h6 class="card-title text-primary mb-2"><tj-icon icon="TriangleAlert" class="me-1"></tj-icon> Consequências da Violência ({{ consequencias.length }})</h6>
+                    @if (consequencias.length) {
+                      <ul class="ps-3 mb-0">
+                        @for (con of consequencias; track $index) {
+                          <li>
+                            <strong>{{ con.chaveParte === 'V1' ? 'Vítima' : 'Acusado' }}</strong>: 
+                            {{ descricaoDominio('consequenciasViolencia', con.idTipoConsequenciaViolencia) }}
+                          </li>
+                        }
+                      </ul>
+                    } @else {
+                      <span class="text-muted">Nenhuma consequência cadastrada</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @if (erroFinalizar) {
+          <div class="alert alert-warning mt-3">{{ erroFinalizar }}</div>
+        }
+
+        <div class="d-flex justify-content-between mt-3">
+          <button type="button" tj-button-secondary matStepperPrevious>
+            Voltar
+          </button>
+          <button
+            type="button"
+            tj-button-primary
+            [disabled]="salvando"
+            (click)="finalizar()">
+            {{ salvando ? 'Finalizando...' : 'Finalizar Cadastro' }}
+          </button>
+        </div>
+      </tj-step>
+    </tj-stepper>
+  </tj-card>
+</tj-page>

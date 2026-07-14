@@ -179,7 +179,8 @@ export class ConsultarCrimesManterComponent extends TjCrudBaseComponent<Consulta
     this.processoPje = undefined;
     this.parteOptions = [];
 
-    this.processoPjeService.consultarPorNumero(numero)
+    this.processoPjeService
+      .consultarPorNumero(numero)
       .pipe(
         finalize(() => {
           this.buscandoPje = false;
@@ -232,7 +233,8 @@ export class ConsultarCrimesManterComponent extends TjCrudBaseComponent<Consulta
     if (!prefixo) return;
 
     this.buscandoCep = true;
-    this.dominioService.pesquisarCeps(prefixo)
+    this.dominioService
+      .pesquisarCeps(prefixo)
       .pipe(
         finalize(() => {
           this.buscandoCep = false;
@@ -273,13 +275,25 @@ export class ConsultarCrimesManterComponent extends TjCrudBaseComponent<Consulta
         idParte: Number(dados.idParteVitima),
         idPolo: Number(dados.idPoloVitima),
         idCep: Number(dados.idCepVitima),
-        idRacaEtnia: dados.idRacaEtniaVitima ? Number(dados.idRacaEtniaVitima) : undefined,
-        idEstadoCivil: dados.idEstadoCivilVitima ? Number(dados.idEstadoCivilVitima) : undefined,
-        idReligiao: dados.idReligiaoVitima ? Number(dados.idReligiaoVitima) : undefined,
-        idEscolaridade: dados.idEscolaridadeVitima ? Number(dados.idEscolaridadeVitima) : undefined,
+        idRacaEtnia: dados.idRacaEtniaVitima
+          ? Number(dados.idRacaEtniaVitima)
+          : undefined,
+        idEstadoCivil: dados.idEstadoCivilVitima
+          ? Number(dados.idEstadoCivilVitima)
+          : undefined,
+        idReligiao: dados.idReligiaoVitima
+          ? Number(dados.idReligiaoVitima)
+          : undefined,
+        idEscolaridade: dados.idEscolaridadeVitima
+          ? Number(dados.idEscolaridadeVitima)
+          : undefined,
         idRenda: dados.idRendaVitima ? Number(dados.idRendaVitima) : undefined,
-        idSituacaoUsoDroga: dados.idSituacaoUsoDrogaVitima ? Number(dados.idSituacaoUsoDrogaVitima) : undefined,
-        idOcupacao: dados.idOcupacaoVitima ? Number(dados.idOcupacaoVitima) : undefined,
+        idSituacaoUsoDroga: dados.idSituacaoUsoDrogaVitima
+          ? Number(dados.idSituacaoUsoDrogaVitima)
+          : undefined,
+        idOcupacao: dados.idOcupacaoVitima
+          ? Number(dados.idOcupacaoVitima)
+          : undefined,
       },
       acusado: {
         idParte: Number(dados.idParteAcusado),
@@ -287,13 +301,27 @@ export class ConsultarCrimesManterComponent extends TjCrudBaseComponent<Consulta
         possuiAntecedentes: dados.possuiAntecedentes === 'S' ? 1 : 0,
         reincidente: dados.reincidente === 'S' ? 1 : 0,
         observacaoAntecedentes: dados.observacaoAntecedentes,
-        idRacaEtnia: dados.idRacaEtniaAcusado ? Number(dados.idRacaEtniaAcusado) : undefined,
-        idEstadoCivil: dados.idEstadoCivilAcusado ? Number(dados.idEstadoCivilAcusado) : undefined,
-        idReligiao: dados.idReligiaoAcusado ? Number(dados.idReligiaoAcusado) : undefined,
-        idEscolaridade: dados.idEscolaridadeAcusado ? Number(dados.idEscolaridadeAcusado) : undefined,
-        idRenda: dados.idRendaAcusado ? Number(dados.idRendaAcusado) : undefined,
-        idSituacaoUsoDroga: dados.idSituacaoUsoDrogaAcusado ? Number(dados.idSituacaoUsoDrogaAcusado) : undefined,
-        idOcupacao: dados.idOcupacaoAcusado ? Number(dados.idOcupacaoAcusado) : undefined,
+        idRacaEtnia: dados.idRacaEtniaAcusado
+          ? Number(dados.idRacaEtniaAcusado)
+          : undefined,
+        idEstadoCivil: dados.idEstadoCivilAcusado
+          ? Number(dados.idEstadoCivilAcusado)
+          : undefined,
+        idReligiao: dados.idReligiaoAcusado
+          ? Number(dados.idReligiaoAcusado)
+          : undefined,
+        idEscolaridade: dados.idEscolaridadeAcusado
+          ? Number(dados.idEscolaridadeAcusado)
+          : undefined,
+        idRenda: dados.idRendaAcusado
+          ? Number(dados.idRendaAcusado)
+          : undefined,
+        idSituacaoUsoDroga: dados.idSituacaoUsoDrogaAcusado
+          ? Number(dados.idSituacaoUsoDrogaAcusado)
+          : undefined,
+        idOcupacao: dados.idOcupacaoAcusado
+          ? Number(dados.idOcupacaoAcusado)
+          : undefined,
       },
       idTipoVinculo: dados.idTipoVinculo
         ? Number(dados.idTipoVinculo)

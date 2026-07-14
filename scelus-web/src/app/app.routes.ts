@@ -32,6 +32,16 @@ export const routes: Routes = [
         title: 'Consultar Crimes do Processo — Scelus',
       },
       {
+        path: 'crimes/new',
+        canActivate: [authGuard],
+        data: { objetoSentinela: 'CrimeController', permissoes: 'INCLUSAO' },
+        loadComponent: () =>
+          import('./features/consultar-crimes/wizard/consultar-crimes-wizard.component').then(
+            m => m.ConsultarCrimesWizardComponent
+          ),
+        title: 'Cadastrar Crime do Processo — Scelus',
+      },
+      {
         path: 'crimes/:id',
         canActivate: [authGuard],
         data: { objetoSentinela: 'CrimeController', permissoes: 'LEITURA' },

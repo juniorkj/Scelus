@@ -5,3 +5,33 @@
 .font-mono {
   font-family: var(--tj-font-mono, monospace);
 }
+
+/* Badge semântico: MPU concedida (verde) */
+.badge-mpu-sim {
+  background-color: #198754;
+  color: #fff;
+}
+
+/* Badge semântico: sem MPU (tom neutro, mas legível) */
+.badge-mpu-nao {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+/* Badge removível dos filtros compostos */
+.badge-filtro {
+  background-color: #0d6efd;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: #0b5ed7;
+  }
+
+  span {
+    margin-left: 0.25rem;
+    font-size: 0.85em;
+    opacity: 0.85;
+  }
+}

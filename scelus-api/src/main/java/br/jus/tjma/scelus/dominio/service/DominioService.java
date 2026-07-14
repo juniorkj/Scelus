@@ -62,7 +62,19 @@ public class DominioService {
                 "tb_tipo_consequencia_violencia",
                 "int_tipo_consequencia_violencia_id",
                 "str_tipo_consequencia_violencia"
-            }));
+            }),
+            java.util.Map.entry(
+                    "tipos-comunicante",
+                    new String[] {"tb_tipo_comunicante", "int_tipo_comunicante_id", "str_tipo_comunicante"}),
+            java.util.Map.entry("tipos-configuracao-familiar", new String[] {
+                "tb_tipo_configuracao_familiar", "int_tipo_configuracao_familiar_id", "str_tipo_config_familiar"
+            }),
+            java.util.Map.entry(
+                    "escutas-judiciais",
+                    new String[] {"tb_escuta_judicial", "int_escuta_judicial_id", "str_escuta_judicial"}),
+            java.util.Map.entry(
+                    "situacoes-uso-droga",
+                    new String[] {"tb_situacao_uso_droga", "int_situacao_uso_droga_id", "str_situacao_uso_droga"}));
 
     private final TipoVinculoRepository tipoVinculoRepository;
     private final PoloRepository poloRepository;

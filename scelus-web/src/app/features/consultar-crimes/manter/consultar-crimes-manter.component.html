@@ -212,7 +212,6 @@
             </div>
           </div>
 
-
           <!-- Passo 4: Acusado -->
           <hr />
           <h6 class="section-title">
@@ -358,19 +357,21 @@
         </h6>
         <div class="row g-3 resumo-fato">
           <div class="col-md-4">
-            <div class="small text-muted">Processo</div>
-            <div class="fw-bold">{{ entity.numeroProcesso || '—' }}</div>
+            <div class="resumo-label">Processo</div>
+            <div class="fw-bold text-primary">
+              {{ entity.numeroProcesso || '—' }}
+            </div>
           </div>
           <div class="col-md-2">
-            <div class="small text-muted">Assunto</div>
-            <div>{{ entity.codigoAssunto || '—' }}</div>
+            <div class="resumo-label">Assunto</div>
+            <div class="fw-semibold">{{ entity.codigoAssunto || '—' }}</div>
           </div>
           <div class="col-md-3">
-            <div class="small text-muted">Vítima</div>
+            <div class="resumo-label">Vítima</div>
             <div>{{ entity.nomeVitima || 'Não informada' }}</div>
           </div>
           <div class="col-md-3">
-            <div class="small text-muted">Acusado</div>
+            <div class="resumo-label">Acusado</div>
             <div>{{ entity.nomeAcusado || 'Não informado' }}</div>
           </div>
         </div>
@@ -499,17 +500,17 @@
         }
 
         <div class="table-responsive mt-3">
-          <table class="table table-sm align-middle">
-            <thead>
+          <table class="table table-sm table-hover align-middle">
+            <thead class="table-light">
               <tr>
-                <th>Nº MPU</th>
-                <th>Legislação/Fundamento</th>
-                <th>Data da Decisão</th>
-                <th>Concedida</th>
-                <th>Justificativa</th>
-                <th>Observação</th>
+                <th scope="col">Nº MPU</th>
+                <th scope="col">Legislação/Fundamento</th>
+                <th scope="col">Data da Decisão</th>
+                <th scope="col">Concedida</th>
+                <th scope="col">Justificativa</th>
+                <th scope="col">Observação</th>
                 @if (!readonly) {
-                  <th class="text-end">Ações</th>
+                  <th scope="col" class="text-end">Ações</th>
                 }
               </tr>
             </thead>
@@ -524,8 +525,8 @@
                   <td>
                     <span
                       class="badge"
-                      [class.bg-success]="vinculo.concedida === 'S'"
-                      [class.bg-secondary]="vinculo.concedida === 'N'">
+                      [class.badge-status-sim]="vinculo.concedida === 'S'"
+                      [class.badge-status-nao]="vinculo.concedida === 'N'">
                       {{ vinculo.concedida === 'S' ? 'Sim' : 'Não' }}
                     </span>
                   </td>

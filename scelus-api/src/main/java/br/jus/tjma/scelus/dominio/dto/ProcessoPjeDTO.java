@@ -12,4 +12,9 @@ import java.util.List;
  * @version 1.0
  * @since 11/07/2026
  */
-public record ProcessoPjeDTO(Integer idProcesso, String numeroUnico, String possuiSentenca, List<PartePjeDTO> partes) {}
+public record ProcessoPjeDTO(
+        Integer idProcesso,
+        String numeroUnico,
+        String possuiSentenca,
+        List<PartePjeDTO> partes,
+        List<AssuntoPjeDTO> assuntos) {}

@@ -1,6 +1,7 @@
 package br.jus.tjma.scelus.dominio.service;
 
 import br.jus.tjma.scelus.comum.EntidadeNaoEncontradaException;
+import br.jus.tjma.scelus.dominio.dto.AssuntoPjeDTO;
 import br.jus.tjma.scelus.dominio.dto.PartePjeDTO;
 import br.jus.tjma.scelus.dominio.dto.ProcessoPjeDTO;
 import java.util.List;
@@ -59,6 +60,7 @@ public class ProcessoPjeService {
                         rs.getInt("int_processo_id"),
                         rs.getString("str_numero_unico_formatado"),
                         rs.getString("bol_sentenca"),
+                        null,
                         null));
 
         if (processos.isEmpty()) {
@@ -67,8 +69,10 @@ public class ProcessoPjeService {
 
         ProcessoPjeDTO processo = processos.get(0);
         List<PartePjeDTO> partes = consultarPartes(processo.idProcesso());
+        List<AssuntoPjeDTO> assuntos = consultarAssuntos(processo.idProcesso());
 
-        return new ProcessoPjeDTO(processo.idProcesso(), processo.numeroUnico(), processo.possuiSentenca(), partes);
+        return new ProcessoPjeDTO(
+                processo.idProcesso(), processo.numeroUnico(), processo.possuiSentenca(), partes, assuntos);
     }
 
     /**
@@ -94,5 +98,22 @@ public class ProcessoPjeService {
                         rs.getString("str_cpf_cnpj"),
                         rs.getString("dta_nacimento"),
                         rs.getString("str_genero")));
+    }
+
+    /**
+     * Consulta os assuntos vinculados ao processo no PJe.
+     *
+     * @param idProcesso Identificador do processo no PJe.
+     * @return Lista de assuntos com código e descrição.
+     */
+    public List<AssuntoPjeDTO> consultarAssuntos(Integer idProcesso) {
+        MapSqlParameterSource parametros = new MapSqlParameterSource("idProcesso", idProcesso);
+
+        return jdbcTemplate.query(
+                "SELECT int_codigo_assunto, str_descricao_assunto "
+                        + "FROM pkg_processo.fn_processo_assunto_pje_con(:idProcesso)",
+                parametros,
+                (rs, rowNum) ->
+                        new AssuntoPjeDTO(rs.getInt("int_codigo_assunto"), rs.getString("str_descricao_assunto")));
     }
 }

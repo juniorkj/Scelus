@@ -21,4 +21,9 @@ public interface ProcessoCrimeRepository extends JpaRepository<ProcessoCrime, Lo
      * Localiza um processo de crime pelo número único (CNJ).
      */
     Optional<ProcessoCrime> findFirstByNumeroUnico(String numeroUnico);
+
+    /**
+     * Localiza um crime cometido específico (processo + assunto).
+     */
+    Optional<ProcessoCrime> findFirstByNumeroUnicoAndCodigoAssunto(String numeroUnico, Long codigoAssunto);
 }

@@ -3,6 +3,8 @@ package br.jus.tjma.scelus.dominio.controller;
 import br.jus.tjma.infraspring.dados.ResultList;
 import br.jus.tjma.scelus.dominio.dto.AlteracaoCrimeRequest;
 import br.jus.tjma.scelus.dominio.dto.AlteracaoCrimeResponse;
+import br.jus.tjma.scelus.dominio.dto.CadastroCrimeCompletoRequest;
+import br.jus.tjma.scelus.dominio.dto.CadastroCrimeCompletoResponse;
 import br.jus.tjma.scelus.dominio.dto.CadastroCrimeRequest;
 import br.jus.tjma.scelus.dominio.dto.CadastroCrimeResponse;
 import br.jus.tjma.scelus.dominio.dto.CrimeDTO;
@@ -11,6 +13,7 @@ import br.jus.tjma.scelus.dominio.dto.FiltroConsultaCrimes;
 import br.jus.tjma.scelus.dominio.dto.MpuVinculadaDTO;
 import br.jus.tjma.scelus.dominio.dto.VinculoMpuRequest;
 import br.jus.tjma.scelus.dominio.dto.VinculoMpuResponse;
+import br.jus.tjma.scelus.dominio.service.CadastroCrimeCompletoService;
 import br.jus.tjma.scelus.dominio.service.CadastroCrimeService;
 import br.jus.tjma.scelus.dominio.service.CrimeService;
 import br.jus.tjma.scelus.dominio.service.MpuService;
@@ -45,12 +48,17 @@ public class CrimeController {
 
     private final CrimeService crimeService;
     private final CadastroCrimeService cadastroCrimeService;
+    private final CadastroCrimeCompletoService cadastroCrimeCompletoService;
     private final MpuService mpuService;
 
     public CrimeController(
-            CrimeService crimeService, CadastroCrimeService cadastroCrimeService, MpuService mpuService) {
+            CrimeService crimeService,
+            CadastroCrimeService cadastroCrimeService,
+            CadastroCrimeCompletoService cadastroCrimeCompletoService,
+            MpuService mpuService) {
         this.crimeService = crimeService;
         this.cadastroCrimeService = cadastroCrimeService;
+        this.cadastroCrimeCompletoService = cadastroCrimeCompletoService;
         this.mpuService = mpuService;
     }
 
@@ -117,6 +125,23 @@ public class CrimeController {
     @PostMapping
     public ResponseEntity<CadastroCrimeResponse> cadastrarCrime(@RequestBody @Valid CadastroCrimeRequest request) {
         CadastroCrimeResponse resposta = cadastroCrimeService.cadastrar(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+    }
+
+    /**
+     * Endpoint do wizard completo de cadastro de crimes do processo (CSU002),
+     * com persistência diferida — todo o payload (vítimas, acusados, vínculos,
+     * fato ocorrido, comunicantes, MPUs e consequências da violência) é gravado
+     * em uma única transação ao final do fluxo (RN01).
+     * Exige permissão de inclusão para o objeto 'CrimeController'.
+     *
+     * @param request Payload consolidado do wizard.
+     * @return Identificadores do fato ocorrido e do processo, e mensagem de sucesso.
+     */
+    @PostMapping("/completo")
+    public ResponseEntity<CadastroCrimeCompletoResponse> cadastrarCrimeCompleto(
+            @RequestBody @Valid CadastroCrimeCompletoRequest request) {
+        CadastroCrimeCompletoResponse resposta = cadastroCrimeCompletoService.cadastrar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
