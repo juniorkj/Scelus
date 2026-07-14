@@ -7,6 +7,7 @@ import br.jus.tjma.scelus.dominio.dto.CadastroCrimeCompletoRequest;
 import br.jus.tjma.scelus.dominio.dto.CadastroCrimeCompletoResponse;
 import br.jus.tjma.scelus.dominio.dto.CadastroCrimeRequest;
 import br.jus.tjma.scelus.dominio.dto.CadastroCrimeResponse;
+import br.jus.tjma.scelus.dominio.dto.CrimeCompletoDetalheDTO;
 import br.jus.tjma.scelus.dominio.dto.CrimeDTO;
 import br.jus.tjma.scelus.dominio.dto.CrimeDetalheDTO;
 import br.jus.tjma.scelus.dominio.dto.FiltroConsultaCrimes;
@@ -15,6 +16,7 @@ import br.jus.tjma.scelus.dominio.dto.VinculoMpuRequest;
 import br.jus.tjma.scelus.dominio.dto.VinculoMpuResponse;
 import br.jus.tjma.scelus.dominio.service.CadastroCrimeCompletoService;
 import br.jus.tjma.scelus.dominio.service.CadastroCrimeService;
+import br.jus.tjma.scelus.dominio.service.CrimeCompletoDetalheService;
 import br.jus.tjma.scelus.dominio.service.CrimeService;
 import br.jus.tjma.scelus.dominio.service.MpuService;
 import jakarta.validation.Valid;
@@ -49,16 +51,19 @@ public class CrimeController {
     private final CrimeService crimeService;
     private final CadastroCrimeService cadastroCrimeService;
     private final CadastroCrimeCompletoService cadastroCrimeCompletoService;
+    private final CrimeCompletoDetalheService crimeCompletoDetalheService;
     private final MpuService mpuService;
 
     public CrimeController(
             CrimeService crimeService,
             CadastroCrimeService cadastroCrimeService,
             CadastroCrimeCompletoService cadastroCrimeCompletoService,
+            CrimeCompletoDetalheService crimeCompletoDetalheService,
             MpuService mpuService) {
         this.crimeService = crimeService;
         this.cadastroCrimeService = cadastroCrimeService;
         this.cadastroCrimeCompletoService = cadastroCrimeCompletoService;
+        this.crimeCompletoDetalheService = crimeCompletoDetalheService;
         this.mpuService = mpuService;
     }
 
@@ -143,6 +148,37 @@ public class CrimeController {
             @RequestBody @Valid CadastroCrimeCompletoRequest request) {
         CadastroCrimeCompletoResponse resposta = cadastroCrimeCompletoService.cadastrar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+    }
+
+    /**
+     * Endpoint de detalhe completo de um crime/fato ocorrido cadastrado pelo
+     * wizard do CSU002, para carregar as telas de edição e visualização em
+     * formato de passos (stepper).
+     *
+     * @param id Identificador do fato ocorrido.
+     * @return Detalhe completo com crimes cometidos, vítima, acusado, vínculo,
+     *     fato ocorrido e consequências da violência.
+     */
+    @GetMapping("/{id}/completo")
+    public ResponseEntity<CrimeCompletoDetalheDTO> buscarCrimeCompleto(@PathVariable Long id) {
+        return ResponseEntity.ok(crimeCompletoDetalheService.buscarDetalhe(id));
+    }
+
+    /**
+     * Endpoint de atualização do wizard completo de cadastro de crimes do
+     * processo (CSU002) — atualização cirúrgica por tabela, preservando os
+     * identificadores estáveis (litigância, vítima, acusado, fato ocorrido,
+     * processo de crime). Exige permissão de ATUALIZACAO para o objeto
+     * 'CrimeController'.
+     *
+     * @param id      Identificador do fato ocorrido.
+     * @param request Payload consolidado do wizard com os dados editados.
+     * @return Identificadores do fato ocorrido e do processo, e mensagem de sucesso.
+     */
+    @PutMapping("/{id}/completo")
+    public ResponseEntity<CadastroCrimeCompletoResponse> atualizarCrimeCompleto(
+            @PathVariable Long id, @RequestBody @Valid CadastroCrimeCompletoRequest request) {
+        return ResponseEntity.ok(cadastroCrimeCompletoService.atualizar(id, request));
     }
 
     /**

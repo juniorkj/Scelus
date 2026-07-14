@@ -47,6 +47,7 @@ export class MpuSeletorComponent extends TjSearchFieldDialog<MpuSeletorService> 
     id: 'Código',
     numeroMpu: 'Nº da MPU',
     numeroUnico: 'Processo',
+    legislacaoFundamento: 'Legislação/Fundamento',
     dataDecisao: 'Data da Decisão',
     concedida: 'Concedida',
   };

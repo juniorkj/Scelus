@@ -62,13 +62,14 @@ export class ConsultarCrimesPesquisarComponent extends TjCrudBaseComponent<Consu
 
   readonly columns = signal({
     numeroProcesso: 'Número do Processo',
-    codigoAssunto: 'Assunto (Código)',
+    codigoAssunto: 'Crime',
     dataFato: 'Data do Fato',
-    medidaProtetiva: 'MPU',
+    possuiMpu: 'MPU',
     nomeVitima: 'Vítima',
     nomeAcusado: 'Acusado',
     tipoVinculo: 'Vínculo',
     deficienciaVitima: 'Deficiência da Vítima',
+    consequenciaViolencia: 'Consequência da Violência',
     actions: 'Ações',
   });
 
@@ -185,6 +186,11 @@ export class ConsultarCrimesPesquisarComponent extends TjCrudBaseComponent<Consu
       chave: 'idsBeneficioAcusado',
       dominio: 'tiposBeneficio',
       label: 'Benefício',
+    },
+    {
+      chave: 'idsConsequenciaViolenciaAcusado',
+      dominio: 'consequenciasViolencia',
+      label: 'Consequência da Violência',
     },
   ];
 

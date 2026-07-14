@@ -2,6 +2,7 @@ export interface CrimeDTO {
   idFatoOcorrido: number;
   numeroProcesso: string;
   codigoAssunto: number;
+  descricaoAssunto?: string;
   dataFato: string;
   medidaProtetiva: string;
   nomeVitima: string;
@@ -10,6 +11,8 @@ export interface CrimeDTO {
   cpfAcusado: string;
   tipoVinculo: string;
   deficienciaVitima?: string;
+  possuiMpu: string;
+  consequenciaViolencia?: string;
 }
 
 export interface FiltroConsultaCrimes {
@@ -205,6 +208,7 @@ export interface ParteWizard {
 /** Crime cometido no wizard (Tela 2.2) — assunto do processo tipificado. */
 export interface CrimeCometidoWizard {
   codigoAssunto: number;
+  descricaoAssunto?: string;
   dataInicioTipificacao: string;
   dataFimTipificacao?: string;
 }
@@ -258,4 +262,105 @@ export interface CadastroCrimeCompletoResponse {
   idFatoOcorrido: number;
   idProcessoCrime: number;
   mensagem: string;
+}
+
+/** Detalhe de um crime cometido já cadastrado (Tela 2.2), para edição/visualização. */
+export interface CrimeCometidoDetalhe {
+  idProcessoCrime: number;
+  codigoAssunto: number;
+  descricaoAssunto?: string;
+  dataInicioTipificacao: string;
+  dataFimTipificacao?: string;
+}
+
+/** Detalhe de um benefício já cadastrado, para edição/visualização. */
+export interface BeneficioDetalhe {
+  idBeneficio: number;
+  idTipoBeneficio: number;
+  dataInicio?: string;
+}
+
+/** Detalhe de uma configuração familiar já cadastrada, para edição/visualização. */
+export interface ConfiguracaoFamiliarDetalhe {
+  idConfiguracaoFamiliar: number;
+  idTipoConfiguracaoFamiliar: number;
+  dataDeclaracao?: string;
+  observacao?: string;
+}
+
+/** Detalhe do perfil demográfico completo de uma vítima/acusado já cadastrado. */
+export interface ParteDetalhe {
+  idLitigancia: number;
+  idVitima?: number;
+  idAcusado?: number;
+  idParte: number;
+  idPolo: number;
+  idSituacaoUsoDroga?: number;
+  idEstadoCivil?: number;
+  idEscolaridade?: number;
+  idRenda?: number;
+  idReligiao?: number;
+  idPosicaoProle?: number;
+  idRacaEtnia?: number;
+  observacoesPosicaoProle?: string;
+  idsOcupacao: number[];
+  idsDeficiencia: number[];
+  idsDroga: number[];
+  idEscutaJudicial?: number;
+  idCep?: number;
+  beneficios: BeneficioDetalhe[];
+  configuracoesFamiliares: ConfiguracaoFamiliarDetalhe[];
+  possuiAntecedentes?: number;
+  reincidente?: number;
+  observacaoAntecedentes?: string;
+}
+
+/** Detalhe do vínculo entre vítima e acusado já cadastrado. */
+export interface VinculoDetalhe {
+  idVinculo: number;
+  idTipoVinculo: number;
+  observacao?: string;
+}
+
+/** Detalhe de um comunicante do fato ocorrido já cadastrado. */
+export interface ComunicanteDetalhe {
+  idComunicante: number;
+  idFatoOcorridoComunicante: number;
+  nome: string;
+  telefone?: string;
+  email?: string;
+  cpfCnpj?: string;
+  idTipoComunicante: number;
+  dataDenuncia?: string;
+  observacao?: string;
+  anonimizado?: boolean;
+}
+
+/** Detalhe do fato ocorrido já cadastrado. */
+export interface FatoOcorridoDetalhe {
+  codigoAssunto: number;
+  dataFato: string;
+  idCep: number;
+  medidaProtetiva: string;
+  comunicantes: ComunicanteDetalhe[];
+}
+
+/** Detalhe de uma consequência da violência já cadastrada. */
+export interface ConsequenciaViolenciaDetalhe {
+  idConsequenciaViolencia: number;
+  parte: 'vitima' | 'acusado';
+  idTipoConsequenciaViolencia: number;
+  observacao?: string;
+}
+
+/** Detalhe completo de um crime/fato ocorrido, para as telas de edição/visualização. */
+export interface CrimeCompletoDetalhe {
+  idFatoOcorrido: number;
+  numeroProcesso: string;
+  crimesCometidos: CrimeCometidoDetalhe[];
+  vitima: ParteDetalhe;
+  acusado: ParteDetalhe;
+  vinculo?: VinculoDetalhe;
+  fatoOcorrido: FatoOcorridoDetalhe;
+  consequenciasViolencia: ConsequenciaViolenciaDetalhe[];
 }

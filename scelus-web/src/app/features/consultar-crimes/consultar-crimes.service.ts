@@ -4,6 +4,7 @@ import { TjCrudService } from '@tjma/angular-21';
 import {
   CadastroCrimeCompletoRequest,
   CadastroCrimeCompletoResponse,
+  CrimeCompletoDetalhe,
   MpuVinculada,
   VinculoMpuRequest,
 } from './consultar-crimes.model';
@@ -20,6 +21,26 @@ export class ConsultarCrimesService extends TjCrudService {
   ): Observable<CadastroCrimeCompletoResponse> {
     return this._http.post<CadastroCrimeCompletoResponse>(
       `${this.backendUrl}/api/crimes/completo`,
+      request
+    );
+  }
+
+  /** Busca o detalhe completo de um crime/fato ocorrido (edição/visualização). */
+  buscarCompleto(
+    idFatoOcorrido: number | string
+  ): Observable<CrimeCompletoDetalhe> {
+    return this._http.get<CrimeCompletoDetalhe>(
+      `${this.backendUrl}/api/crimes/${idFatoOcorrido}/completo`
+    );
+  }
+
+  /** Atualiza o wizard completo do CSU002 (edição — RN01). */
+  atualizarCompleto(
+    idFatoOcorrido: number | string,
+    request: CadastroCrimeCompletoRequest
+  ): Observable<CadastroCrimeCompletoResponse> {
+    return this._http.put<CadastroCrimeCompletoResponse>(
+      `${this.backendUrl}/api/crimes/${idFatoOcorrido}/completo`,
       request
     );
   }

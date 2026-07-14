@@ -46,8 +46,8 @@ export const routes: Routes = [
         canActivate: [authGuard],
         data: { objetoSentinela: 'CrimeController', permissoes: 'LEITURA' },
         loadComponent: () =>
-          import('./features/consultar-crimes/manter/consultar-crimes-manter.component').then(
-            m => m.ConsultarCrimesManterComponent
+          import('./features/consultar-crimes/wizard/consultar-crimes-wizard.component').then(
+            m => m.ConsultarCrimesWizardComponent
           ),
         title: 'Manter Crime do Processo — Scelus',
       },

@@ -71,6 +71,7 @@ public class FiltroConsultaCrimes extends FiltroPesquisaWeb {
     private List<Long> idsDeficienciaAcusado;
     private List<Long> idsRacaEtniaAcusado;
     private List<Long> idsBeneficioAcusado;
+    private List<Long> idsConsequenciaViolenciaAcusado;
 
     public String getNumeroProcesso() {
         return numeroProcesso;
@@ -398,5 +399,13 @@ public class FiltroConsultaCrimes extends FiltroPesquisaWeb {
 
     public void setIdsBeneficioAcusado(List<Long> v) {
         this.idsBeneficioAcusado = v;
+    }
+
+    public List<Long> getIdsConsequenciaViolenciaAcusado() {
+        return idsConsequenciaViolenciaAcusado;
+    }
+
+    public void setIdsConsequenciaViolenciaAcusado(List<Long> v) {
+        this.idsConsequenciaViolenciaAcusado = v;
     }
 }

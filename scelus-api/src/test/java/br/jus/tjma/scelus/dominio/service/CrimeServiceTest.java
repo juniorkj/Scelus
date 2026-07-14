@@ -83,6 +83,7 @@ class CrimeServiceTest {
                 1L,
                 "0001-01.2024.8.10.0001",
                 10625L,
+                "Violência Doméstica",
                 LocalDateTime.of(2024, 1, 10, 14, 30),
                 "S",
                 "Maria Silva",
@@ -90,6 +91,8 @@ class CrimeServiceTest {
                 "João Pereira",
                 "987.654.321-00",
                 "Cônjuge",
+                null,
+                "N",
                 null);
     }
 

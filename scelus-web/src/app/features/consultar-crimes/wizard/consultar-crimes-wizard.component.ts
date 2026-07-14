@@ -1,5 +1,5 @@
 import { Component, inject, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -21,18 +21,25 @@ import {
   TjStepperModule,
   TjPaginaNavegacao,
   TjStepper,
+  TjSearchField,
 } from '@tjma/angular-21';
 import { ConsultarCrimesService } from '../consultar-crimes.service';
 import { ProcessoPjeService } from '../processo-pje.service';
 import { DominioService } from '../../../core/services/dominio.service';
+import { MpuSeletorComponent } from '../mpu-seletor/mpu-seletor.component';
+import { MpusService } from '../../mpus/mpus.service';
 import {
   CadastroCrimeCompletoRequest,
   ComunicanteWizard,
   ConsequenciaViolenciaWizard,
   CrimeCometidoWizard,
   ItemDominio,
+  MpuDTO,
+  MpuVinculada,
+  MpuVinculoWizard,
   ParteWizard,
   ProcessoPje,
+  VinculoMpuRequest,
 } from '../consultar-crimes.model';
 
 type Opcao = { label: string; value: number };
@@ -67,6 +74,7 @@ type Opcao = { label: string; value: number };
     TjDatePicker,
     TjButtonModule,
     TjStepperModule,
+    TjSearchField,
     MatStepperNext,
     MatStepperPrevious,
     MatStepperModule,
@@ -77,16 +85,38 @@ type Opcao = { label: string; value: number };
 })
 export class ConsultarCrimesWizardComponent {
   @ViewChild('stepper') stepper!: TjStepper;
+  @ViewChild('numeroProcessoInput') numeroProcessoInput!: TjInput;
+
+  /** Registra o componente do modal seletor de MPU assim que o campo é renderizado. */
+  @ViewChild(TjSearchField)
+  set mpuField(field: TjSearchField | undefined) {
+    field?.setDialogComponent(MpuSeletorComponent);
+  }
 
   private readonly router = inject(Router);
+  private readonly activatedRoute = inject(ActivatedRoute);
   private readonly service = inject(ConsultarCrimesService);
   private readonly processoPjeService = inject(ProcessoPjeService);
   private readonly dominioService = inject(DominioService);
+  private readonly mpusService = inject(MpusService);
 
-  readonly navigation: TjPaginaNavegacao = {
-    grupo: { href: '/crimes', title: 'Consultar Crimes' },
-    atual: { href: '/crimes/new', title: 'Cadastrar Crime do Processo' },
-  };
+  /** Identificador do fato ocorrido em edição/visualização (ausente em cadastro novo). */
+  idFatoOcorrido?: number;
+  modoSomenteLeitura = false;
+  carregandoDetalhe = false;
+
+  get navigation(): TjPaginaNavegacao {
+    return {
+      grupo: { href: '/crimes', title: 'Consultar Crimes' },
+      atual: { href: this.router.url, title: this.tituloPagina },
+    };
+  }
+
+  get tituloPagina(): string {
+    if (this.modoSomenteLeitura) return 'Visualizar Crime do Processo';
+    if (this.idFatoOcorrido) return 'Editar Crime do Processo';
+    return 'Cadastrar Crime do Processo';
+  }
 
   readonly simNaoOptions: TjRadioOption[] = [
     { label: 'Sim', value: 'S' },
@@ -164,11 +194,49 @@ export class ConsultarCrimesWizardComponent {
   consequencias: ConsequenciaViolenciaWizard[] = [];
   opcoesPartes: Opcao[] = [];
 
+  // ── MPU vinculada ao fato ocorrido (CSU008 — somente em edição/visualização) ──
+  mpusVinculadas: MpuVinculada[] = [];
+  mpuSelecionada?: { id: number; numeroMpu?: string };
+  vinculoMpu: {
+    idJustificativaInclusaoMpu?: number;
+    observacaoJustificativa?: string;
+  } = {};
+  vinculandoMpu = false;
+
+  // ── CSU008 — Telas 8.1/8.2/8.3, estado em memória (cadastro novo, RN008.07) ──
+  mpusList: MpuVinculoWizard[] = [];
+  mpuIdentificadas: MpuDTO[] = [];
+  buscandoMpuIdentificadas = false;
+  mpuIdentificadasBuscadas = false;
+  mpuSelecionadaParaJustificativa?: MpuDTO;
+  justificativaSelecionada: {
+    idJustificativaInclusaoMpu?: number;
+    observacaoJustificativa?: string;
+  } = {};
+  novaMpu: {
+    numeroMpu?: string;
+    legislacaoFundamento?: string;
+    dataDecisao?: string;
+    concedida?: string;
+    dataIntimacaoAcusado?: string;
+    dataIntimacaoVitima?: string;
+    dataCienciaVitima?: string;
+    dataCienciaAcusado?: string;
+    pedidoDesistencia?: string;
+    inqueritoInstaurado?: string;
+    observacoes?: string;
+    idJustificativaInclusaoMpu?: number;
+    observacaoJustificativa?: string;
+  } = {};
+
   salvando = false;
   erroFinalizar?: string;
 
   /** Índice máximo já visitado — define quais passos ficam verdes */
-  maxPassoAtingido = -1;
+  maxPassoAtingido = 0;
+
+  /** Índice do passo atualmente selecionado — o passo atual nunca fica vermelho. */
+  passoAtual = 0;
 
   // ── Domínios ──
   dominios: Record<string, Opcao[]> = {
@@ -190,8 +258,28 @@ export class ConsultarCrimesWizardComponent {
     consequenciasViolencia: [],
   };
 
+  /** Justificativas de inclusão de MPU (CSU008), carregadas à parte de `dominios`. */
+  justificativaOptions: Opcao[] = [];
+
   constructor() {
     this.carregarDominios();
+    this.dominioService.listarJustificativasInclusaoMpu().subscribe({
+      next: itens => {
+        this.justificativaOptions = itens.map(i => ({
+          label: i.descricao,
+          value: i.id,
+        }));
+      },
+    });
+
+    // Mesma convenção do TjCrudBaseComponent: `?_readonly=true` na própria
+    // rota `/crimes/:id` alterna entre visualizar e editar (sem rota própria).
+    this.modoSomenteLeitura =
+      this.activatedRoute.snapshot.queryParamMap.get('_readonly') === 'true';
+    const idParam = this.activatedRoute.snapshot.paramMap.get('id');
+    if (idParam && idParam !== 'new') {
+      this.carregarDetalhe(Number(idParam));
+    }
   }
 
   private carregarDominios(): void {
@@ -232,10 +320,23 @@ export class ConsultarCrimesWizardComponent {
     });
   }
 
+  /** Índice do passo "Fato Ocorrido" (0-based): Processo, Crimes, Vítima, Acusado, Benefícios, Vínculo, Fato. */
+  private readonly PASSO_FATO_OCORRIDO = 6;
+
   /** Chamado ao navegar entre passos — mantém o maior índice já atingido */
   onStepChange(novoIndice: number): void {
+    this.passoAtual = novoIndice;
     if (novoIndice > this.maxPassoAtingido) {
       this.maxPassoAtingido = novoIndice;
+    }
+    // RN008.02: ao chegar no passo do Fato Ocorrido em um cadastro novo, busca
+    // automaticamente as MPUs já cadastradas para o par vítima-acusado.
+    if (
+      novoIndice === this.PASSO_FATO_OCORRIDO &&
+      !this.idFatoOcorrido &&
+      !this.mpuIdentificadasBuscadas
+    ) {
+      this.buscarMpusIdentificadas();
     }
   }
 
@@ -246,33 +347,46 @@ export class ConsultarCrimesWizardComponent {
 
   // ── Validações de Erro por Passo (Obrigatórios) ──
 
+  /**
+   * Um passo só fica vermelho depois de já ter sido visitado (o usuário passou
+   * por ele) e ainda estar incompleto — nunca no primeiro carregamento da página
+   * nem no passo em que o usuário está no momento (senão todo passo com campo
+   * obrigatório nasce vermelho antes mesmo de o usuário digitar algo).
+   */
+  private passoVisitadoComErro(indice: number, condicaoErro: boolean): boolean {
+    return (
+      condicaoErro &&
+      indice !== this.passoAtual &&
+      indice <= this.maxPassoAtingido
+    );
+  }
+
   get erroPassoProcesso(): boolean {
-    // É erro se não foi buscado processo
-    return !this.processoPje;
+    return this.passoVisitadoComErro(0, !this.processoPje);
   }
 
   get erroPassoCrimesCometidos(): boolean {
-    // É erro se nenhum crime cometido foi cadastrado
-    return this.crimesCometidosList.length === 0;
+    return this.passoVisitadoComErro(1, this.crimesCometidosList.length === 0);
   }
 
   get erroPassoVitima(): boolean {
-    // É erro se a vítima não foi selecionada ou se o CEP de residência dela não está preenchido
-    return !this.vitima.idParte || !this.vitima.idCep;
+    return this.passoVisitadoComErro(
+      2,
+      !this.vitima.idParte || !this.vitima.idCep
+    );
   }
 
   get erroPassoAcusado(): boolean {
-    // É erro se o acusado não foi selecionado
-    return !this.acusado.idParte;
+    return this.passoVisitadoComErro(3, !this.acusado.idParte);
   }
 
   get erroPassoFato(): boolean {
-    // É erro se o crime, a data do fato, medida protetiva ou CEP do fato não foram informados
-    return (
+    return this.passoVisitadoComErro(
+      this.PASSO_FATO_OCORRIDO,
       !this.fatoCodigoAssunto ||
-      !this.dataFato ||
-      !this.medidaProtetiva ||
-      !this.fatoIdCep
+        !this.dataFato ||
+        !this.medidaProtetiva ||
+        !this.fatoIdCep
     );
   }
 
@@ -293,7 +407,12 @@ export class ConsultarCrimesWizardComponent {
 
   buscarProcessoPje(): void {
     const numero = (this.numeroProcesso || '').trim();
-    if (!numero) return;
+    if (!numero) {
+      if (this.numeroProcessoInput) {
+        this.numeroProcessoInput.onTouch();
+      }
+      return;
+    }
 
     this.buscandoPje = true;
     this.erroPje = undefined;
@@ -322,7 +441,8 @@ export class ConsultarCrimesWizardComponent {
         this.crimeOptions = [];
 
         // Reseta o estado de progresso do Stepper ao consultar um novo processo
-        this.maxPassoAtingido = -1;
+        this.maxPassoAtingido = 0;
+        this.passoAtual = 0;
         if (this.stepper) {
           this.stepper.reset();
         }
@@ -338,6 +458,322 @@ export class ConsultarCrimesWizardComponent {
     });
   }
 
+  /** Carrega o detalhe completo de um crime/fato ocorrido (edição/visualização). */
+  private carregarDetalhe(idFatoOcorrido: number): void {
+    this.carregandoDetalhe = true;
+    this.service.buscarCompleto(idFatoOcorrido).subscribe({
+      next: detalhe => {
+        this.idFatoOcorrido = detalhe.idFatoOcorrido;
+        this.numeroProcesso = detalhe.numeroProcesso;
+
+        this.buscandoPje = true;
+        this.processoPjeService
+          .consultarPorNumero(detalhe.numeroProcesso)
+          .subscribe({
+            next: processo => {
+              this.processoPje = processo;
+              this.parteOptions = (processo.partes || []).map(parte => ({
+                label: `${parte.nome}${parte.cpfCnpj ? ' — ' + parte.cpfCnpj : ''} (${parte.polo})`,
+                value: parte.idParte,
+              }));
+              this.assuntoOptions = (processo.assuntos || []).map(a => ({
+                label: `${a.codigo} — ${a.descricao}`,
+                value: a.codigo,
+              }));
+              this.buscandoPje = false;
+
+              this.crimesCometidosList = detalhe.crimesCometidos.map(c => ({
+                codigoAssunto: c.codigoAssunto,
+                descricaoAssunto: c.descricaoAssunto,
+                dataInicioTipificacao: c.dataInicioTipificacao,
+                dataFimTipificacao: c.dataFimTipificacao,
+              }));
+              this.atualizarOpcoesCrimes();
+
+              this.vitima = { chave: 'V1', ...detalhe.vitima };
+              this.acusado = { chave: 'A1', ...detalhe.acusado };
+              this.atualizarOpcoesPartes();
+
+              if (detalhe.vitima.idCep) {
+                this.cepOptionsVitima = [
+                  {
+                    label: `CEP ${detalhe.vitima.idCep}`,
+                    value: detalhe.vitima.idCep,
+                  },
+                ];
+              }
+
+              if (detalhe.vinculo) {
+                this.vinculo = {
+                  idTipoVinculo: detalhe.vinculo.idTipoVinculo,
+                  observacao: detalhe.vinculo.observacao,
+                };
+              }
+
+              this.fatoCodigoAssunto = detalhe.fatoOcorrido.codigoAssunto;
+              this.dataFato = detalhe.fatoOcorrido.dataFato;
+              this.medidaProtetiva = detalhe.fatoOcorrido.medidaProtetiva;
+              this.fatoIdCep = detalhe.fatoOcorrido.idCep;
+              this.cepOptionsFato = [
+                {
+                  label: `CEP ${detalhe.fatoOcorrido.idCep}`,
+                  value: detalhe.fatoOcorrido.idCep,
+                },
+              ];
+              this.comunicantes = detalhe.fatoOcorrido.comunicantes.map(c => ({
+                nome: c.nome,
+                telefone: c.telefone,
+                email: c.email,
+                cpfCnpj: c.cpfCnpj,
+                idTipoComunicante: c.idTipoComunicante,
+                dataDenuncia: c.dataDenuncia,
+                observacao: c.observacao,
+                anonimizado: c.anonimizado,
+              }));
+
+              this.consequencias = detalhe.consequenciasViolencia.map(c => ({
+                chaveParte:
+                  c.parte === 'vitima' ? this.vitima.chave : this.acusado.chave,
+                idTipoConsequenciaViolencia: c.idTipoConsequenciaViolencia,
+                observacao: c.observacao || '',
+              }));
+
+              // Marca todos os passos como já visitados, liberando navegação livre.
+              this.maxPassoAtingido = 8;
+
+              this.carregarMpusVinculadas();
+              this.carregandoDetalhe = false;
+            },
+            error: () => {
+              this.buscandoPje = false;
+              this.carregandoDetalhe = false;
+              this.erroPje =
+                'Não foi possível recarregar os dados do processo no PJe.';
+            },
+          });
+      },
+      error: erro => {
+        this.carregandoDetalhe = false;
+        this.erroFinalizar =
+          erro?.error?.detail ||
+          erro?.error?.message ||
+          'Não foi possível carregar o crime cadastrado.';
+      },
+    });
+  }
+
+  // ── MPU vinculada ao fato ocorrido (CSU008) ──
+  carregarMpusVinculadas(): void {
+    if (!this.idFatoOcorrido) return;
+    this.service.listarMpusDoFato(this.idFatoOcorrido).subscribe({
+      next: mpus => (this.mpusVinculadas = mpus),
+    });
+  }
+
+  vincularMpu(): void {
+    const idMpu = this.mpuSelecionada?.id;
+    const idJustificativa = this.vinculoMpu.idJustificativaInclusaoMpu;
+    if (!idMpu || !idJustificativa || !this.idFatoOcorrido) return;
+
+    const request: VinculoMpuRequest = {
+      idMpu: Number(idMpu),
+      idJustificativaInclusaoMpu: Number(idJustificativa),
+      observacaoJustificativa: this.vinculoMpu.observacaoJustificativa,
+    };
+
+    this.vinculandoMpu = true;
+    this.service.vincularMpu(this.idFatoOcorrido, request).subscribe({
+      next: () => {
+        this.vinculandoMpu = false;
+        this.mpuSelecionada = undefined;
+        this.vinculoMpu = {};
+        this.carregarMpusVinculadas();
+      },
+      error: () => {
+        this.vinculandoMpu = false;
+      },
+    });
+  }
+
+  removerVinculoMpu(vinculo: MpuVinculada): void {
+    if (!this.idFatoOcorrido) return;
+    if (
+      !confirm(
+        `Remover o vínculo da MPU ${vinculo.numeroMpu || vinculo.idMpu}?`
+      )
+    ) {
+      return;
+    }
+    this.service.removerVinculoMpu(this.idFatoOcorrido, vinculo.id).subscribe({
+      next: () => this.carregarMpusVinculadas(),
+    });
+  }
+
+  get podeVincularMpu(): boolean {
+    if (
+      !this.mpuSelecionada?.id ||
+      !this.vinculoMpu.idJustificativaInclusaoMpu ||
+      this.vinculandoMpu
+    ) {
+      return false;
+    }
+    if (
+      this.ehJustificativaOutros(this.vinculoMpu.idJustificativaInclusaoMpu) &&
+      !this.vinculoMpu.observacaoJustificativa
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  // ── CSU008 (Telas 8.1/8.2/8.3) — cadastro novo: estado em memória (RN008.07) ──
+
+  /** RN008.02: busca global de MPUs para o par vítima-acusado, pelas partes do PJe. */
+  buscarMpusIdentificadas(): void {
+    if (!this.vitima.idParte || !this.acusado.idParte) return;
+    this.buscandoMpuIdentificadas = true;
+    this.mpusService
+      .buscarPorPar(this.vitima.idParte, this.acusado.idParte)
+      .subscribe({
+        next: mpus => {
+          this.mpuIdentificadas = mpus;
+          this.mpuIdentificadasBuscadas = true;
+          this.buscandoMpuIdentificadas = false;
+        },
+        error: () => {
+          this.mpuIdentificadasBuscadas = true;
+          this.buscandoMpuIdentificadas = false;
+        },
+      });
+  }
+
+  /** RN008.04: seleção explícita de uma MPU identificada, abrindo a Tela 8.3 (justificativa). */
+  selecionarMpuIdentificada(mpu: MpuDTO): void {
+    this.mpuSelecionadaParaJustificativa = mpu;
+    this.justificativaSelecionada = {};
+  }
+
+  cancelarJustificativaMpu(): void {
+    this.mpuSelecionadaParaJustificativa = undefined;
+    this.justificativaSelecionada = {};
+  }
+
+  /** RN008.05: quando a justificativa selecionada for "Outros", a observação é obrigatória. */
+  ehJustificativaOutros(
+    idJustificativaInclusaoMpu: number | undefined
+  ): boolean {
+    const opcao = this.justificativaOptions.find(
+      o => o.value === Number(idJustificativaInclusaoMpu)
+    );
+    return !!opcao && opcao.label.trim().toLowerCase() === 'outros';
+  }
+
+  get podeConfirmarJustificativaMpu(): boolean {
+    if (!this.justificativaSelecionada.idJustificativaInclusaoMpu) return false;
+    if (
+      this.ehJustificativaOutros(
+        this.justificativaSelecionada.idJustificativaInclusaoMpu
+      ) &&
+      !this.justificativaSelecionada.observacaoJustificativa
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  /** RN008.06: registra a associação temporária (MPU identificada + justificativa) no quadro Resumo. */
+  confirmarJustificativaMpuIdentificada(): void {
+    if (
+      !this.mpuSelecionadaParaJustificativa ||
+      !this.podeConfirmarJustificativaMpu
+    ) {
+      return;
+    }
+    this.mpusList = [
+      ...this.mpusList,
+      {
+        idMpuExistente: this.mpuSelecionadaParaJustificativa.id,
+        idJustificativaInclusaoMpu: Number(
+          this.justificativaSelecionada.idJustificativaInclusaoMpu
+        ),
+        observacaoJustificativa:
+          this.justificativaSelecionada.observacaoJustificativa,
+      },
+    ];
+    this.mpuSelecionadaParaJustificativa = undefined;
+    this.justificativaSelecionada = {};
+  }
+
+  get podeAdicionarNovaMpu(): boolean {
+    const n = this.novaMpu;
+    if (
+      !n.legislacaoFundamento ||
+      !n.dataDecisao ||
+      !n.concedida ||
+      !n.dataIntimacaoAcusado ||
+      !n.dataIntimacaoVitima ||
+      !n.pedidoDesistencia ||
+      !n.inqueritoInstaurado ||
+      !n.idJustificativaInclusaoMpu
+    ) {
+      return false;
+    }
+    if (
+      this.ehJustificativaOutros(n.idJustificativaInclusaoMpu) &&
+      !n.observacaoJustificativa
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  /** RN008.01: registra temporariamente uma MPU nova, com processo/vítima/acusado do fato em pauta. */
+  adicionarNovaMpu(): void {
+    if (!this.podeAdicionarNovaMpu) return;
+    const n = this.novaMpu;
+
+    this.mpusList = [
+      ...this.mpusList,
+      {
+        novaMpu: {
+          legislacaoFundamento: n.legislacaoFundamento!,
+          dataDecisao: this.normalizarDataHora(n.dataDecisao),
+          concedida: n.concedida!,
+          dataIntimacaoAcusado: this.normalizarDataHora(n.dataIntimacaoAcusado),
+          dataIntimacaoVitima: this.normalizarDataHora(n.dataIntimacaoVitima),
+          dataCienciaVitima: n.dataCienciaVitima
+            ? this.normalizarDataHora(n.dataCienciaVitima)
+            : undefined,
+          dataCienciaAcusado: n.dataCienciaAcusado
+            ? this.normalizarDataHora(n.dataCienciaAcusado)
+            : undefined,
+          pedidoDesistencia: n.pedidoDesistencia!,
+          inqueritoInstaurado: n.inqueritoInstaurado!,
+          observacoes: n.observacoes,
+          numeroMpu: n.numeroMpu,
+          numeroUnico: this.processoPje?.numeroUnico,
+        },
+        idJustificativaInclusaoMpu: Number(n.idJustificativaInclusaoMpu),
+        observacaoJustificativa: n.observacaoJustificativa,
+      },
+    ];
+    this.novaMpu = {};
+  }
+
+  removerMpuStaged(index: number): void {
+    this.mpusList = this.mpusList.filter((_, i) => i !== index);
+  }
+
+  descricaoMpuStaged(mpu: MpuVinculoWizard): string {
+    if (mpu.novaMpu) {
+      return `Nova MPU — ${mpu.novaMpu.numeroMpu || mpu.novaMpu.legislacaoFundamento}`;
+    }
+    const identificada = this.mpuIdentificadas.find(
+      m => m.id === mpu.idMpuExistente
+    );
+    return `MPU ${identificada?.numeroMpu || mpu.idMpuExistente}`;
+  }
+
   // ── Passo 2 (Tela 2.2): Crimes Cometidos ──
   adicionarCrimeCometido(): void {
     const codigoAssunto = this.novoCrimeCometido.codigoAssunto;
@@ -351,10 +787,15 @@ export class ConsultarCrimesWizardComponent {
       return;
     }
 
+    const assunto = this.processoPje?.assuntos?.find(
+      a => a.codigo === Number(codigoAssunto)
+    );
+
     this.crimesCometidosList = [
       ...this.crimesCometidosList,
       {
         codigoAssunto: Number(codigoAssunto),
+        descricaoAssunto: assunto?.descricao,
         dataInicioTipificacao: this.normalizarDataHora(dataInicio),
         dataFimTipificacao: this.novoCrimeCometido.dataFimTipificacao
           ? this.normalizarDataHora(this.novoCrimeCometido.dataFimTipificacao)
@@ -468,6 +909,14 @@ export class ConsultarCrimesWizardComponent {
     return (
       this.assuntoOptions.find(o => o.value === Number(codigoAssunto))?.label ||
       String(codigoAssunto)
+    );
+  }
+
+  descricaoJustificativaMpu(idJustificativaInclusaoMpu: number): string {
+    return (
+      this.justificativaOptions.find(
+        o => o.value === Number(idJustificativaInclusaoMpu)
+      )?.label || String(idJustificativaInclusaoMpu)
     );
   }
 
@@ -653,10 +1102,15 @@ export class ConsultarCrimesWizardComponent {
         medidaProtetiva: this.medidaProtetiva,
         comunicantes: this.comunicantes,
       },
+      mpus: this.mpusList,
       consequenciasViolencia: this.consequencias,
     };
 
-    this.service.cadastrarCompleto(payload).subscribe({
+    const requisicao = this.idFatoOcorrido
+      ? this.service.atualizarCompleto(this.idFatoOcorrido, payload)
+      : this.service.cadastrarCompleto(payload);
+
+    requisicao.subscribe({
       next: () => {
         this.salvando = false;
         this.router.navigate(['/crimes']);

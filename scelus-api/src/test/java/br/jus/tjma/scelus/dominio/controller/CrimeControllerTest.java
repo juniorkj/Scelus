@@ -65,6 +65,7 @@ class CrimeControllerTest {
                 1L,
                 "0001234-56.2024.8.10.0001",
                 10625L,
+                "Violência Doméstica",
                 LocalDateTime.of(2024, 3, 15, 10, 0),
                 "S",
                 "Maria Silva",
@@ -72,6 +73,8 @@ class CrimeControllerTest {
                 "João Pereira",
                 "987.654.321-00",
                 "Cônjuge",
+                null,
+                "N",
                 null);
     }
 

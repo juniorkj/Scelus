@@ -32,6 +32,7 @@ public class CrimeService {
         SELECT f.int_fato_ocorrido_id AS idFatoOcorrido, \
                p.str_numero_unico AS numeroProcesso, \
                p.int_codigo_assunto AS codigoAssunto, \
+               p.str_descricao_assunto AS descricaoAssunto, \
                f.dta_data_fato AS dataFato, \
                f.bol_medida_protetiva AS medidaProtetiva, \
                v_pje.str_nome AS nomeVitima, \
@@ -42,7 +43,16 @@ public class CrimeService {
                (SELECT string_agg(d.str_deficiencia, ', ') \
                   FROM public.tb_litigancia_deficiencia ld \
                   JOIN public.tb_deficiencia d ON d.int_deficiencia_id = ld.int_deficiencia_id \
-                 WHERE ld.int_litigancia_id = l_vt.int_litigancia_id) AS deficienciaVitima\s""";
+                 WHERE ld.int_litigancia_id = l_vt.int_litigancia_id) AS deficienciaVitima, \
+               CASE WHEN EXISTS (SELECT 1 FROM public.tb_fato_ocorrido_mpu fom \
+                                  WHERE fom.int_fato_ocorrido_id = f.int_fato_ocorrido_id) \
+                    THEN 'S' ELSE 'N' END AS possuiMpu, \
+               (SELECT string_agg(tcv.str_tipo_consequencia_violencia, ', ') \
+                  FROM public.tb_consequencia_violencia cv \
+                  JOIN public.tb_tipo_consequencia_violencia tcv \
+                    ON tcv.int_tipo_consequencia_violencia_id = cv.int_tipo_consequencia_violencia_id \
+                 WHERE cv.int_litigancia_id IN (l_vt.int_litigancia_id, l_ac.int_litigancia_id)) \
+                    AS consequenciaViolencia\s""";
 
     private static final String SQL_COLUNAS_DETALHE = SQL_COLUNAS
             + """
@@ -397,6 +407,14 @@ public class CrimeService {
                 "int_tipo_consequencia_violencia_id",
                 "idsConsequenciaViolenciaVitima",
                 filtro.getIdsConsequenciaViolenciaVitima());
+        aplicarListaExists(
+                sql,
+                parametros,
+                "l_ac",
+                "tb_consequencia_violencia",
+                "int_tipo_consequencia_violencia_id",
+                "idsConsequenciaViolenciaAcusado",
+                filtro.getIdsConsequenciaViolenciaAcusado());
 
         if (filtro.getIdsRacaEtniaVitima() != null
                 && !filtro.getIdsRacaEtniaVitima().isEmpty()) {
@@ -449,6 +467,7 @@ public class CrimeService {
                 rs.getLong("idFatoOcorrido"),
                 rs.getString("numeroProcesso"),
                 rs.getLong("codigoAssunto"),
+                rs.getString("descricaoAssunto"),
                 ts != null ? ts.toLocalDateTime() : null,
                 rs.getString("medidaProtetiva"),
                 rs.getString("nomeVitima"),
@@ -456,7 +475,9 @@ public class CrimeService {
                 rs.getString("nomeAcusado"),
                 rs.getString("cpfAcusado"),
                 rs.getString("tipoVinculo"),
-                rs.getString("deficienciaVitima"));
+                rs.getString("deficienciaVitima"),
+                rs.getString("possuiMpu"),
+                rs.getString("consequenciaViolencia"));
     }
 
     private CrimeDetalheDTO mapearDetalhe(ResultSet rs, int rowNum) throws SQLException {

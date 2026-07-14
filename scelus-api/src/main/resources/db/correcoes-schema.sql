@@ -428,3 +428,7 @@ begin
 
 end;
 $function$;
+
+-- ── Nova coluna tb_processo_crime.str_descricao_assunto (CSU001 — coluna "Crime" com descrição, não só código) ──
+ALTER TABLE public.tb_processo_crime
+ADD COLUMN IF NOT EXISTS str_descricao_assunto character varying;

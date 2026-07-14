@@ -1,6 +1,7 @@
 package br.jus.tjma.scelus.dominio.service;
 
 import br.jus.tjma.scelus.comum.AppException;
+import br.jus.tjma.scelus.comum.EntidadeNaoEncontradaException;
 import br.jus.tjma.scelus.comum.ResultadoFuncao;
 import br.jus.tjma.scelus.dominio.dto.BeneficioWizardDTO;
 import br.jus.tjma.scelus.dominio.dto.CadastroCrimeCompletoRequest;
@@ -18,15 +19,22 @@ import br.jus.tjma.scelus.dominio.model.Acusado;
 import br.jus.tjma.scelus.dominio.model.Comunicante;
 import br.jus.tjma.scelus.dominio.model.ConfiguracaoFamiliar;
 import br.jus.tjma.scelus.dominio.model.ConsequenciaViolencia;
+import br.jus.tjma.scelus.dominio.model.FatoOcorrido;
 import br.jus.tjma.scelus.dominio.model.FatoOcorridoComunicante;
 import br.jus.tjma.scelus.dominio.model.ProcessoCrime;
 import br.jus.tjma.scelus.dominio.model.Vinculo;
 import br.jus.tjma.scelus.dominio.model.Vitima;
 import br.jus.tjma.scelus.dominio.repository.AcusadoRepository;
+import br.jus.tjma.scelus.dominio.repository.BeneficioRepository;
 import br.jus.tjma.scelus.dominio.repository.ComunicanteRepository;
 import br.jus.tjma.scelus.dominio.repository.ConfiguracaoFamiliarRepository;
 import br.jus.tjma.scelus.dominio.repository.ConsequenciaViolenciaRepository;
 import br.jus.tjma.scelus.dominio.repository.FatoOcorridoComunicanteRepository;
+import br.jus.tjma.scelus.dominio.repository.FatoOcorridoRepository;
+import br.jus.tjma.scelus.dominio.repository.LitigenciaDeficienciaRepository;
+import br.jus.tjma.scelus.dominio.repository.LitigenciaDrogaRepository;
+import br.jus.tjma.scelus.dominio.repository.LitigenciaEscutaJudicialRepository;
+import br.jus.tjma.scelus.dominio.repository.LitigenciaOcupacaoRepository;
 import br.jus.tjma.scelus.dominio.repository.ProcessoCrimeRepository;
 import br.jus.tjma.scelus.dominio.repository.VinculoRepository;
 import br.jus.tjma.scelus.dominio.repository.VitimaRepository;
@@ -66,9 +74,15 @@ public class CadastroCrimeCompletoService {
     private final AcusadoRepository acusadoRepository;
     private final VinculoRepository vinculoRepository;
     private final ComunicanteRepository comunicanteRepository;
+    private final FatoOcorridoRepository fatoOcorridoRepository;
     private final FatoOcorridoComunicanteRepository fatoOcorridoComunicanteRepository;
     private final ConfiguracaoFamiliarRepository configuracaoFamiliarRepository;
     private final ConsequenciaViolenciaRepository consequenciaViolenciaRepository;
+    private final BeneficioRepository beneficioRepository;
+    private final LitigenciaOcupacaoRepository litigenciaOcupacaoRepository;
+    private final LitigenciaDeficienciaRepository litigenciaDeficienciaRepository;
+    private final LitigenciaDrogaRepository litigenciaDrogaRepository;
+    private final LitigenciaEscutaJudicialRepository litigenciaEscutaJudicialRepository;
     private final MpuService mpuService;
 
     public CadastroCrimeCompletoService(
@@ -78,9 +92,15 @@ public class CadastroCrimeCompletoService {
             AcusadoRepository acusadoRepository,
             VinculoRepository vinculoRepository,
             ComunicanteRepository comunicanteRepository,
+            FatoOcorridoRepository fatoOcorridoRepository,
             FatoOcorridoComunicanteRepository fatoOcorridoComunicanteRepository,
             ConfiguracaoFamiliarRepository configuracaoFamiliarRepository,
             ConsequenciaViolenciaRepository consequenciaViolenciaRepository,
+            BeneficioRepository beneficioRepository,
+            LitigenciaOcupacaoRepository litigenciaOcupacaoRepository,
+            LitigenciaDeficienciaRepository litigenciaDeficienciaRepository,
+            LitigenciaDrogaRepository litigenciaDrogaRepository,
+            LitigenciaEscutaJudicialRepository litigenciaEscutaJudicialRepository,
             MpuService mpuService) {
         this.jdbcTemplate = jdbcTemplate;
         this.processoCrimeRepository = processoCrimeRepository;
@@ -88,9 +108,15 @@ public class CadastroCrimeCompletoService {
         this.acusadoRepository = acusadoRepository;
         this.vinculoRepository = vinculoRepository;
         this.comunicanteRepository = comunicanteRepository;
+        this.fatoOcorridoRepository = fatoOcorridoRepository;
         this.fatoOcorridoComunicanteRepository = fatoOcorridoComunicanteRepository;
         this.configuracaoFamiliarRepository = configuracaoFamiliarRepository;
         this.consequenciaViolenciaRepository = consequenciaViolenciaRepository;
+        this.beneficioRepository = beneficioRepository;
+        this.litigenciaOcupacaoRepository = litigenciaOcupacaoRepository;
+        this.litigenciaDeficienciaRepository = litigenciaDeficienciaRepository;
+        this.litigenciaDrogaRepository = litigenciaDrogaRepository;
+        this.litigenciaEscutaJudicialRepository = litigenciaEscutaJudicialRepository;
         this.mpuService = mpuService;
     }
 
@@ -199,6 +225,281 @@ public class CadastroCrimeCompletoService {
         return new CadastroCrimeCompletoResponse(idFatoOcorrido, processoCrimeFato.getId(), fato.mensagem());
     }
 
+    /**
+     * Atualiza um crime/fato ocorrido já cadastrado (edição via wizard), com
+     * atualização cirúrgica por tabela: cada bloco (crimes cometidos, perfil da
+     * parte, associações, benefícios, configuração familiar, vínculo,
+     * comunicantes e consequências) é comparado com o estado atual e ajustado
+     * por update/insert/delete pontual — preservando os identificadores
+     * estáveis (litigância, vítima, acusado, fato ocorrido, processo de crime).
+     *
+     * @param idFatoOcorrido Identificador do fato ocorrido a ser atualizado.
+     * @param request Payload consolidado do wizard com os dados editados.
+     * @return Identificadores do fato ocorrido e do processo, e mensagem de sucesso do banco.
+     */
+    @Transactional
+    public CadastroCrimeCompletoResponse atualizar(Long idFatoOcorrido, CadastroCrimeCompletoRequest request) {
+        FatoOcorrido fato = fatoOcorridoRepository
+                .findById(idFatoOcorrido)
+                .orElseThrow(
+                        () -> new EntidadeNaoEncontradaException("Fato ocorrido não encontrado: " + idFatoOcorrido));
+
+        Vitima vitima = vitimaRepository
+                .findById(fato.getIdVitima())
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Vítima não encontrada: " + fato.getIdVitima()));
+        Acusado acusado = acusadoRepository
+                .findById(fato.getIdAcusado())
+                .orElseThrow(
+                        () -> new EntidadeNaoEncontradaException("Acusado não encontrado: " + fato.getIdAcusado()));
+
+        ParteWizardDTO parteVitima = primeiraParte(request.vitimas(), "vítima");
+        ParteWizardDTO parteAcusado = primeiraParte(request.acusados(), "acusado");
+
+        if (parteVitima.idCep() == null) {
+            throw new AppException("O CEP de residência da vítima é obrigatório.");
+        }
+
+        Map<Long, ProcessoCrime> assuntoParaProcessoCrime =
+                atualizarCrimesCometidos(request.numeroProcesso(), request.crimesCometidos());
+
+        atualizarPerfilLitigancia(vitima.getIdLitigancia(), request.numeroProcesso(), parteVitima);
+        atualizarAssociacoesLitigancia(vitima.getIdLitigancia(), parteVitima);
+        vitima.setIdCep(parteVitima.idCep());
+        vitimaRepository.save(vitima);
+        atualizarBeneficios(vitima.getIdLitigancia(), parteVitima.beneficios());
+        atualizarConfiguracoesFamiliares(vitima.getId(), parteVitima.configuracoesFamiliares());
+
+        atualizarPerfilLitigancia(acusado.getIdLitigancia(), request.numeroProcesso(), parteAcusado);
+        atualizarAssociacoesLitigancia(acusado.getIdLitigancia(), parteAcusado);
+        acusado.setPossuiAntecedentes(parteAcusado.possuiAntecedentes());
+        acusado.setReincidente(parteAcusado.reincidente());
+        acusado.setObservacaoAntecedentes(parteAcusado.observacaoAntecedentes());
+        acusadoRepository.save(acusado);
+        atualizarBeneficios(acusado.getIdLitigancia(), parteAcusado.beneficios());
+
+        atualizarVinculo(vitima.getId(), acusado.getId(), request.vinculos());
+
+        ProcessoCrime processoCrimeFato = processoCrimePorAssunto(
+                assuntoParaProcessoCrime, request.fatoOcorrido().codigoAssunto());
+
+        MapSqlParameterSource parametrosFato = new MapSqlParameterSource()
+                .addValue("id", idFatoOcorrido)
+                .addValue("idAcusado", acusado.getId())
+                .addValue("idVitima", vitima.getId())
+                .addValue("dataFato", paraTimestamp(request.fatoOcorrido().dataFato()))
+                .addValue("idCep", request.fatoOcorrido().idCep())
+                .addValue("medidaProtetiva", request.fatoOcorrido().medidaProtetiva())
+                .addValue("idProcessoCrime", processoCrimeFato.getId());
+        String mensagemFato = jdbcTemplate.queryForObject(
+                "SELECT pkg_fato_ocorrido.fn_fato_ocorrido_upd("
+                        + ":id, :idAcusado, :idVitima, :dataFato, :idCep, :medidaProtetiva, :idProcessoCrime)",
+                parametrosFato,
+                String.class);
+        validarMensagem(mensagemFato);
+
+        atualizarComunicantes(idFatoOcorrido, request.fatoOcorrido().comunicantes());
+        atualizarConsequencias(
+                vitima.getIdLitigancia(),
+                acusado.getIdLitigancia(),
+                parteVitima.chave(),
+                parteAcusado.chave(),
+                request.consequenciasViolencia());
+
+        return new CadastroCrimeCompletoResponse(idFatoOcorrido, processoCrimeFato.getId(), mensagemFato);
+    }
+
+    private ParteWizardDTO primeiraParte(List<ParteWizardDTO> partes, String rotulo) {
+        if (partes == null || partes.isEmpty()) {
+            throw new AppException("Os dados da " + rotulo + " são obrigatórios.");
+        }
+        return partes.get(0);
+    }
+
+    /**
+     * Cria os crimes cometidos ainda não existentes e atualiza a tipificação dos
+     * já cadastrados. Crimes cometidos removidos da tela não são excluídos aqui —
+     * a exclusão de um crime já referenciado por outros fatos é responsabilidade
+     * de um fluxo dedicado, para não arriscar órfãos por FK.
+     */
+    private Map<Long, ProcessoCrime> atualizarCrimesCometidos(
+            String numeroProcesso, List<CrimeCometidoWizardDTO> crimesCometidos) {
+        Map<Long, ProcessoCrime> existentes = processoCrimeRepository.findByNumeroUnico(numeroProcesso).stream()
+                .collect(java.util.stream.Collectors.toMap(ProcessoCrime::getCodigoAssunto, pc -> pc));
+
+        Map<Long, ProcessoCrime> assuntoParaProcessoCrime = new HashMap<>();
+        for (CrimeCometidoWizardDTO crimeCometido : crimesCometidos) {
+            Long codigoAssunto = crimeCometido.codigoAssunto().longValue();
+            ProcessoCrime processoCrime = existentes.get(codigoAssunto);
+            if (processoCrime == null) {
+                processoCrime = new ProcessoCrime();
+                processoCrime.setNumeroUnico(numeroProcesso);
+                processoCrime.setCodigoAssunto(codigoAssunto);
+            }
+            processoCrime.setDescricaoAssunto(crimeCometido.descricaoAssunto());
+            processoCrime.setDataInicioTipificacao(crimeCometido.dataInicioTipificacao());
+            processoCrime.setDataFimTipificacao(crimeCometido.dataFimTipificacao());
+            processoCrime = processoCrimeRepository.save(processoCrime);
+            assuntoParaProcessoCrime.put(codigoAssunto, processoCrime);
+        }
+        return assuntoParaProcessoCrime;
+    }
+
+    /**
+     * Atualiza o perfil demográfico da litigância via pkg_litigancia.fn_litigancia_upd.
+     */
+    private void atualizarPerfilLitigancia(Long idLitigancia, String numeroProcesso, ParteWizardDTO parte) {
+        MapSqlParameterSource parametros = new MapSqlParameterSource()
+                .addValue("idLitigancia", idLitigancia)
+                .addValue("idPolo", parte.idPolo())
+                .addValue("numeroUnico", numeroProcesso)
+                .addValue("idParte", parte.idParte())
+                .addValue("idSituacaoUsoDroga", parte.idSituacaoUsoDroga())
+                .addValue("idEstadoCivil", parte.idEstadoCivil())
+                .addValue("idEscolaridade", parte.idEscolaridade())
+                .addValue("idRenda", parte.idRenda())
+                .addValue("idReligiao", parte.idReligiao())
+                .addValue("idPosicaoProle", parte.idPosicaoProle())
+                .addValue("idRacaEtnia", parte.idRacaEtnia())
+                .addValue("observacoesPosicaoProle", parte.observacoesPosicaoProle());
+
+        String mensagem = jdbcTemplate.queryForObject(
+                "SELECT pkg_litigancia.fn_litigancia_upd("
+                        + ":idLitigancia, :idPolo, :numeroUnico, :idParte, :idSituacaoUsoDroga, :idEstadoCivil, "
+                        + ":idEscolaridade, :idRenda, :idReligiao, :idPosicaoProle, :idRacaEtnia, "
+                        + ":observacoesPosicaoProle)",
+                parametros,
+                String.class);
+        validarMensagem(mensagem);
+    }
+
+    /**
+     * Substitui as associações N:M da litigância (ocupações, deficiências, escuta
+     * judicial e drogas) pelas informadas na tela — exclui todas as existentes e
+     * reinsere as atuais, reaplicando a RN02.
+     */
+    private void atualizarAssociacoesLitigancia(Long idLitigancia, ParteWizardDTO parte) {
+        litigenciaOcupacaoRepository
+                .findByIdLitigancia(idLitigancia)
+                .forEach(a -> executarExclusaoAssociacao("pkg_litigancia.fn_litigancia_ocupacao_del(:id)", a.getId()));
+        litigenciaDeficienciaRepository
+                .findByIdLitigancia(idLitigancia)
+                .forEach(a ->
+                        executarExclusaoAssociacao("pkg_litigancia.fn_litigancia_deficiencia_del(:id)", a.getId()));
+        litigenciaEscutaJudicialRepository
+                .findByIdLitigancia(idLitigancia)
+                .forEach(a ->
+                        executarExclusaoAssociacao("pkg_litigancia.fn_litigancia_escuta_judicial_del(:id)", a.getId()));
+        litigenciaDrogaRepository
+                .findByIdLitigancia(idLitigancia)
+                .forEach(a -> executarExclusaoAssociacao("pkg_litigancia.fn_litigancia_droga_del(:id)", a.getId()));
+
+        processarAssociacoesLitigancia(idLitigancia, parte);
+    }
+
+    private void executarExclusaoAssociacao(String chamadaFuncao, Long id) {
+        MapSqlParameterSource parametros = new MapSqlParameterSource("id", id);
+        String mensagem = jdbcTemplate.queryForObject("SELECT " + chamadaFuncao, parametros, String.class);
+        validarMensagem(mensagem);
+    }
+
+    /**
+     * Substitui os benefícios da litigância pelos informados na tela.
+     */
+    private void atualizarBeneficios(Long idLitigancia, List<BeneficioWizardDTO> beneficios) {
+        beneficioRepository.deleteAll(beneficioRepository.findByIdLitigancia(idLitigancia));
+        processarBeneficios(idLitigancia, beneficios);
+    }
+
+    /**
+     * Substitui as configurações familiares da vítima pelas informadas na tela.
+     */
+    private void atualizarConfiguracoesFamiliares(Long idVitima, List<ConfiguracaoFamiliarWizardDTO> configuracoes) {
+        configuracaoFamiliarRepository.deleteAll(configuracaoFamiliarRepository.findByIdVitima(idVitima));
+        processarConfiguracoesFamiliares(idVitima, configuracoes);
+    }
+
+    /**
+     * Cria, atualiza ou remove o vínculo entre a vítima e o acusado conforme
+     * informado (ou não) na tela.
+     */
+    private void atualizarVinculo(Long idVitima, Long idAcusado, List<VinculoWizardDTO> vinculos) {
+        var existente = vinculoRepository.findFirstByIdVitimaAndIdAcusado(idVitima, idAcusado);
+        var novoOpt = vinculos == null
+                ? java.util.Optional.<VinculoWizardDTO>empty()
+                : vinculos.stream().findFirst();
+
+        if (novoOpt.isEmpty()) {
+            existente.ifPresent(vinculoRepository::delete);
+            return;
+        }
+
+        VinculoWizardDTO novo = novoOpt.get();
+        Vinculo vinculo = existente.orElseGet(Vinculo::new);
+        vinculo.setIdVitima(idVitima);
+        vinculo.setIdAcusado(idAcusado);
+        vinculo.setIdTipoVinculo(novo.idTipoVinculo());
+        vinculo.setObservacao(novo.observacao());
+        vinculoRepository.save(vinculo);
+    }
+
+    /**
+     * Substitui os comunicantes do fato ocorrido pelos informados na tela.
+     */
+    private void atualizarComunicantes(Long idFatoOcorrido, List<ComunicanteWizardDTO> comunicantes) {
+        for (FatoOcorridoComunicante associacao :
+                fatoOcorridoComunicanteRepository.findByIdFatoOcorrido(idFatoOcorrido)) {
+            fatoOcorridoComunicanteRepository.delete(associacao);
+            comunicanteRepository.deleteById(associacao.getIdComunicante());
+        }
+        if (comunicantes != null) {
+            for (ComunicanteWizardDTO comunicanteDTO : comunicantes) {
+                processarComunicante(idFatoOcorrido, comunicanteDTO);
+            }
+        }
+    }
+
+    /**
+     * Substitui as consequências da violência da vítima e do acusado pelas
+     * informadas na tela.
+     */
+    private void atualizarConsequencias(
+            Long idLitiganciaVitima,
+            Long idLitiganciaAcusado,
+            String chaveVitima,
+            String chaveAcusado,
+            List<ConsequenciaViolenciaWizardDTO> consequencias) {
+        consequenciaViolenciaRepository.deleteAll(
+                consequenciaViolenciaRepository.findByIdLitigancia(idLitiganciaVitima));
+        consequenciaViolenciaRepository.deleteAll(
+                consequenciaViolenciaRepository.findByIdLitigancia(idLitiganciaAcusado));
+
+        if (consequencias == null) {
+            return;
+        }
+        Map<String, Long> chaveParaLitigancia = new HashMap<>();
+        chaveParaLitigancia.put(chaveVitima, idLitiganciaVitima);
+        chaveParaLitigancia.put(chaveAcusado, idLitiganciaAcusado);
+
+        for (ConsequenciaViolenciaWizardDTO consequenciaDTO : consequencias) {
+            Long idLitigancia = chaveParaLitigancia.get(consequenciaDTO.chaveParte());
+            if (idLitigancia == null) {
+                throw new AppException(
+                        "Parte não encontrada para a consequência da violência: " + consequenciaDTO.chaveParte());
+            }
+            ConsequenciaViolencia consequencia = new ConsequenciaViolencia();
+            consequencia.setIdLitigancia(idLitigancia);
+            consequencia.setIdTipoConsequenciaViolencia(consequenciaDTO.idTipoConsequenciaViolencia());
+            consequencia.setObservacao(consequenciaDTO.observacao());
+            consequenciaViolenciaRepository.save(consequencia);
+        }
+    }
+
+    private void validarMensagem(String mensagem) {
+        if (mensagem == null || !mensagem.contains("GER-S")) {
+            throw new AppException(mensagem);
+        }
+    }
+
     private Long idVitimaPorChave(Map<String, Long> chaveParaIdVitima, String chave) {
         Long id = chaveParaIdVitima.get(chave);
         if (id == null) {
@@ -233,6 +534,7 @@ public class CadastroCrimeCompletoService {
                         ProcessoCrime novo = new ProcessoCrime();
                         novo.setNumeroUnico(request.numeroProcesso());
                         novo.setCodigoAssunto(codigoAssunto);
+                        novo.setDescricaoAssunto(crimeCometido.descricaoAssunto());
                         novo.setDataInicioTipificacao(crimeCometido.dataInicioTipificacao());
                         novo.setDataFimTipificacao(crimeCometido.dataFimTipificacao());
                         return processoCrimeRepository.save(novo);

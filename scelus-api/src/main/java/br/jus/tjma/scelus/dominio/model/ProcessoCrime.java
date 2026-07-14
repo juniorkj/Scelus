@@ -30,6 +30,9 @@ public class ProcessoCrime {
     @Column(name = "int_codigo_assunto", nullable = false)
     private Long codigoAssunto;
 
+    @Column(name = "str_descricao_assunto")
+    private String descricaoAssunto;
+
     @Column(name = "str_numero_unico", nullable = false)
     private String numeroUnico;
 
@@ -71,5 +74,13 @@ public class ProcessoCrime {
 
     public void setNumeroUnico(String numeroUnico) {
         this.numeroUnico = numeroUnico;
+    }
+
+    public String getDescricaoAssunto() {
+        return descricaoAssunto;
+    }
+
+    public void setDescricaoAssunto(String descricaoAssunto) {
+        this.descricaoAssunto = descricaoAssunto;
     }
 }

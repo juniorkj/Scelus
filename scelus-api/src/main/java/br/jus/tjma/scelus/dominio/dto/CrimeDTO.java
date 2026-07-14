@@ -15,6 +15,7 @@ public record CrimeDTO(
         Long idFatoOcorrido,
         String numeroProcesso,
         Long codigoAssunto,
+        String descricaoAssunto,
         LocalDateTime dataFato,
         String medidaProtetiva,
         String nomeVitima,
@@ -22,4 +23,6 @@ public record CrimeDTO(
         String nomeAcusado,
         String cpfAcusado,
         String tipoVinculo,
-        String deficienciaVitima) {}
+        String deficienciaVitima,
+        String possuiMpu,
+        String consequenciaViolencia) {}

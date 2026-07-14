@@ -16,5 +16,6 @@ import java.time.LocalDateTime;
  */
 public record CrimeCometidoWizardDTO(
         @NotNull(message = "O código do assunto é obrigatório.") Integer codigoAssunto,
+        String descricaoAssunto,
         @NotNull(message = "A data de início da tipificação é obrigatória.") LocalDateTime dataInicioTipificacao,
         LocalDateTime dataFimTipificacao) {}

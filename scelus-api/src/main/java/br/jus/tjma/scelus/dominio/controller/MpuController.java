@@ -7,6 +7,7 @@ import br.jus.tjma.scelus.dominio.dto.FiltroConsultaMpus;
 import br.jus.tjma.scelus.dominio.dto.MpuDTO;
 import br.jus.tjma.scelus.dominio.service.MpuService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +51,20 @@ public class MpuController {
     @GetMapping
     public ResponseEntity<ResultList<MpuDTO>> consultarMpus(FiltroConsultaMpus filtro) {
         return ResponseEntity.ok(mpuService.consultarMpus(filtro));
+    }
+
+    /**
+     * Endpoint de busca global de MPUs pelo par vítima-acusado (RN008.02),
+     * identificado pelas partes do PJe — independe do processo de origem.
+     *
+     * @param idParteVitima  Identificador da parte (PJe) da vítima.
+     * @param idParteAcusado Identificador da parte (PJe) do acusado.
+     * @return MPUs encontradas para o par, mais recentes primeiro.
+     */
+    @GetMapping("/par")
+    public ResponseEntity<List<MpuDTO>> buscarPorPar(
+            @RequestParam Long idParteVitima, @RequestParam Long idParteAcusado) {
+        return ResponseEntity.ok(mpuService.buscarPorPar(idParteVitima, idParteAcusado));
     }
 
     /**

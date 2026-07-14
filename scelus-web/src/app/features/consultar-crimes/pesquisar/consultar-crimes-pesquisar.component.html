@@ -327,11 +327,14 @@
         </td>
       </ng-container>
 
-      <!-- Coluna: Código do Assunto -->
+      <!-- Coluna: Crime (assunto) -->
       <ng-container matColumnDef="codigoAssunto">
         <th mat-header-cell *matHeaderCellDef>{{ columns().codigoAssunto }}</th>
         <td mat-cell *matCellDef="let c">
-          <div>{{ c.codigoAssunto }}</div>
+          <div>{{ c.descricaoAssunto || c.codigoAssunto }}</div>
+          @if (c.descricaoAssunto) {
+            <div class="small text-muted">{{ c.codigoAssunto }}</div>
+          }
         </td>
       </ng-container>
 
@@ -343,17 +346,17 @@
         </td>
       </ng-container>
 
-      <!-- Coluna: MPU -->
-      <ng-container matColumnDef="medidaProtetiva">
+      <!-- Coluna: MPU (calculada — existe vínculo em tb_fato_ocorrido_mpu) -->
+      <ng-container matColumnDef="possuiMpu">
         <th mat-header-cell *matHeaderCellDef>
-          {{ columns().medidaProtetiva }}
+          {{ columns().possuiMpu }}
         </th>
         <td mat-cell *matCellDef="let c">
           <span
             class="badge"
-            [class.badge-mpu-sim]="c.medidaProtetiva === 'S'"
-            [class.badge-mpu-nao]="c.medidaProtetiva === 'N'">
-            {{ c.medidaProtetiva === 'S' ? 'Sim' : 'Não' }}
+            [class.badge-mpu-sim]="c.possuiMpu === 'S'"
+            [class.badge-mpu-nao]="c.possuiMpu === 'N'">
+            {{ c.possuiMpu === 'S' ? 'Sim' : 'Não' }}
           </span>
         </td>
       </ng-container>
@@ -399,6 +402,16 @@
         </th>
         <td mat-cell *matCellDef="let c">
           <div>{{ c.deficienciaVitima || '—' }}</div>
+        </td>
+      </ng-container>
+
+      <!-- Coluna: Consequência da Violência -->
+      <ng-container matColumnDef="consequenciaViolencia">
+        <th mat-header-cell *matHeaderCellDef>
+          {{ columns().consequenciaViolencia }}
+        </th>
+        <td mat-cell *matCellDef="let c">
+          <div>{{ c.consequenciaViolencia || '—' }}</div>
         </td>
       </ng-container>
 

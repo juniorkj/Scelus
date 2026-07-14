@@ -1,6 +1,7 @@
 package br.jus.tjma.scelus.dominio.repository;
 
 import br.jus.tjma.scelus.dominio.model.ProcessoCrime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -26,4 +27,9 @@ public interface ProcessoCrimeRepository extends JpaRepository<ProcessoCrime, Lo
      * Localiza um crime cometido específico (processo + assunto).
      */
     Optional<ProcessoCrime> findFirstByNumeroUnicoAndCodigoAssunto(String numeroUnico, Long codigoAssunto);
+
+    /**
+     * Localiza todos os crimes cometidos (Tela 2.2) de um processo.
+     */
+    List<ProcessoCrime> findByNumeroUnico(String numeroUnico);
 }

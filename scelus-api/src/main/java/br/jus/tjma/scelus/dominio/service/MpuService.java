@@ -87,6 +87,38 @@ public class MpuService {
     }
 
     /**
+     * Busca, de forma global (independente do processo de origem), as MPUs já
+     * cadastradas para o mesmo par vítima-acusado (RN008.02), identificado pelas
+     * partes do PJe (estáveis entre processos, ao contrário de vítima/acusado
+     * internos, que são recriados a cada novo processo).
+     *
+     * @param idParteVitima  Identificador da parte (PJe) da vítima.
+     * @param idParteAcusado Identificador da parte (PJe) do acusado.
+     * @return MPUs encontradas para o par, mais recentes primeiro.
+     */
+    @Transactional(readOnly = true)
+    public List<MpuDTO> buscarPorPar(Long idParteVitima, Long idParteAcusado) {
+        MapSqlParameterSource parametros = new MapSqlParameterSource()
+                .addValue("idParteVitima", idParteVitima)
+                .addValue("idParteAcusado", idParteAcusado);
+
+        return jdbcTemplate.query(
+                "SELECT mpu.int_mpu_id, mpu.str_numero_mpu, mpu.str_numero_unico, mpu.str_legislacao_fundamento, "
+                        + "       mpu.dta_decisao, mpu.bol_concedida, mpu.dta_intimacao_acusado, mpu.dta_intimacao_vitima, "
+                        + "       mpu.dta_ciencia_vitima, mpu.dta_ciencia_acusado, "
+                        + "       mpu.bol_pedido_desistencia, mpu.bol_inquerito_instaurado, mpu.str_observacoes "
+                        + "FROM public.tb_medida_protetiva_urgencia mpu "
+                        + "JOIN public.tb_vitima v ON v.int_vitima_id = mpu.int_vitima_id "
+                        + "JOIN public.tb_litigancia lv ON lv.int_litigancia_id = v.int_litigancia_id "
+                        + "JOIN public.tb_acusado a ON a.int_acusado_id = mpu.int_acusado_id "
+                        + "JOIN public.tb_litigancia la ON la.int_litigancia_id = a.int_litigancia_id "
+                        + "WHERE lv.int_parte_id = :idParteVitima AND la.int_parte_id = :idParteAcusado "
+                        + "ORDER BY mpu.dta_decisao DESC",
+                parametros,
+                this::mapearMpu);
+    }
+
+    /**
      * Busca uma MPU pelo identificador (tela de edição).
      *
      * @param idMpu Identificador da MPU.
@@ -232,6 +264,8 @@ public class MpuService {
     @Transactional
     public VinculoMpuResponse alterarVinculoMpu(
             Long idFatoOcorridoMpu, Long idFatoOcorrido, VinculoMpuRequest request) {
+        validarJustificativaOutros(request.idJustificativaInclusaoMpu(), request.observacaoJustificativa());
+
         MapSqlParameterSource parametros = new MapSqlParameterSource()
                 .addValue("id", idFatoOcorridoMpu)
                 .addValue("idMpu", request.idMpu())
@@ -259,6 +293,8 @@ public class MpuService {
      */
     @Transactional
     public VinculoMpuResponse vincularMpu(Long idFatoOcorrido, VinculoMpuRequest request) {
+        validarJustificativaOutros(request.idJustificativaInclusaoMpu(), request.observacaoJustificativa());
+
         MapSqlParameterSource parametros = new MapSqlParameterSource()
                 .addValue("idMpu", request.idMpu())
                 .addValue("idFatoOcorrido", idFatoOcorrido)
@@ -325,6 +361,26 @@ public class MpuService {
         ResultadoFuncao resultado = new ResultadoFuncao(idFatoOcorridoMpu, mensagem);
         resultado.validar();
         return mensagem;
+    }
+
+    /**
+     * RN008.05: toda MPU previamente cadastrada vinculada exige justificativa;
+     * quando a justificativa selecionada for "Outros", a observação passa a ser
+     * obrigatória.
+     */
+    private void validarJustificativaOutros(Long idJustificativaInclusaoMpu, String observacaoJustificativa) {
+        MapSqlParameterSource parametros = new MapSqlParameterSource("id", idJustificativaInclusaoMpu);
+        String descricao = jdbcTemplate.queryForObject(
+                "SELECT str_justificativa_inclusao_mpu FROM public.tb_justificativa_inclusao_mpu "
+                        + "WHERE int_justificativa_inclusao_mpu_id = :id",
+                parametros,
+                String.class);
+
+        boolean ehOutros = descricao != null && descricao.trim().equalsIgnoreCase("outros");
+        if (ehOutros && (observacaoJustificativa == null || observacaoJustificativa.isBlank())) {
+            throw new br.jus.tjma.scelus.comum.AppException(
+                    "A observação é obrigatória quando a justificativa de inclusão for \"Outros\".");
+        }
     }
 
     private LocalDateTime paraLocalDateTime(Timestamp timestamp) {
