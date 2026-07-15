@@ -432,3 +432,121 @@ $function$;
 -- ── Nova coluna tb_processo_crime.str_descricao_assunto (CSU001 — coluna "Crime" com descrição, não só código) ──
 ALTER TABLE public.tb_processo_crime
 ADD COLUMN IF NOT EXISTS str_descricao_assunto character varying;
+
+-- ── Correção pkg_litigancia.fn_litigancia_con — 4 bugs (só se manifestam em runtime, pois PL/pgSQL
+-- não valida a SQL interna do RETURN QUERY na criação da função) ──
+--   1. p_str_numero_unico declarado bigint, mas comparado com l.str_numero_unico (varchar) — causava
+--      "operator does not exist: character varying = bigint" em toda chamada (GET /crimes/{id}/completo),
+--      mesmo com o parâmetro NULL (curto-circuito do OR não evita a checagem de tipo em tempo de planejamento).
+--      Correção: tipo do parâmetro alterado para character varying.
+--   2. "rec_basel.int_escolaridade_id" — typo, a subquery se chama "rec_base" (sem o "l" no final).
+--   3. "v.int_posicao" — alias "v" não existe no FROM; a coluna é "rec_base.int_posicao".
+--   4. "ORDER BY rec_base.int_inscricao_id" — coluna não existe em rec_base (nenhuma coluna com esse
+--      nome é selecionada na subquery); trocado para rec_base.int_litigancia_id, seguindo o padrão de
+--      outras fn_*_con que ordenam a paginação pela PK da tabela principal.
+CREATE OR REPLACE FUNCTION pkg_litigancia.fn_litigancia_con(p_int_litigancia_id bigint DEFAULT NULL::bigint, p_int_polo_id bigint DEFAULT NULL::bigint, p_str_numero_unico character varying DEFAULT NULL::character varying, p_int_parte_id bigint DEFAULT NULL::bigint, p_int_start_row integer DEFAULT NULL::integer, p_int_end_row integer DEFAULT NULL::integer)
+ RETURNS TABLE(int_litigancia_id bigint, int_polo_id bigint, str_polo character varying, str_numero_unico character varying, int_parte_id bigint, str_parte character varying, int_situacao_uso_droga_id bigint, str_situacao_uso_droga character varying, int_estado_civil_id bigint, str_estado_civil character varying, int_escolaridade_id bigint, str_escolaridade character varying, int_renda_id bigint, str_renda character varying, int_religiao_id bigint, str_religiao character varying, int_posicao_prole_id bigint, int_prole bigint, int_posicao bigint, int_raca_etnia_id bigint, str_raca_etnia character varying, str_observacoes_posicao_prole character varying, int_reg bigint, int_total_count bigint)
+ LANGUAGE plpgsql
+AS $function$
+
+	/*
+		Consulta Litigancia
+		Autor: Mauro França
+		Solicitante: KingJr
+		Data criação: 20260605
+	*/
+
+DECLARE
+    v_tamanho_pagina integer;
+    v_inicio_pagina  integer;
+BEGIN
+    -- Paginação...
+    v_inicio_pagina :=
+        CASE
+            WHEN p_int_start_row = 0 THEN 1
+            WHEN p_int_start_row IS NOT NULL THEN p_int_start_row
+            ELSE 1
+        END;
+
+    v_tamanho_pagina :=
+        CASE
+            WHEN p_int_end_row IS NOT NULL THEN p_int_end_row
+            ELSE 99999
+        END;
+
+    -- converte start/end row para OFFSET/LIMIT
+    v_inicio_pagina  := v_inicio_pagina - 1;
+    v_tamanho_pagina := v_tamanho_pagina - v_inicio_pagina;
+
+    RETURN QUERY
+    SELECT
+			  rec_base.int_litigancia_id
+			, rec_base.int_polo_id
+			, rec_base.str_polo
+			, rec_base.str_numero_unico
+			, rec_base.int_parte_id
+			, rec_base.str_parte
+			, rec_base.int_situacao_uso_droga_id
+			, rec_base.str_situacao_uso_droga
+			, rec_base.int_estado_civil_id
+			, rec_base.str_estado_civil
+			, rec_base.int_escolaridade_id
+			, rec_base.str_escolaridade
+			, rec_base.int_renda_id
+			, rec_base.str_renda
+			, rec_base.int_religiao_id
+			, rec_base.str_religiao
+			, rec_base.int_posicao_prole_id
+			, rec_base.int_prole
+			, rec_base.int_posicao
+			, rec_base.int_raca_etnia_id
+			, rec_base.str_raca_etnia
+			, rec_base.str_observacoes_posicao_prole,
+        ROW_NUMBER() OVER (ORDER BY rec_base.int_litigancia_id DESC) AS int_reg,
+        COUNT(*) OVER () AS  int_total_count
+    FROM (
+			SELECT l.int_litigancia_id
+			     , l.int_polo_id
+				 , p.str_polo
+				 , l.str_numero_unico
+				 , l.int_parte_id
+			     , '???' as str_parte
+				 , l.int_situacao_uso_droga_id
+				 , sud.str_situacao_uso_droga
+				 , l.int_estado_civil_id
+				 , ec.str_estado_civil
+				 , l.int_escolaridade_id
+				 , e.str_escolaridade
+				 , l.int_renda_id
+				 , re.str_renda
+				 , l.int_religiao_id
+				 , rl.str_religiao
+				 , l.int_posicao_prole_id
+				 , pp.int_prole
+				 , pp.int_posicao
+				 , l.int_raca_etnia_id
+				 , ret.str_raca_etnia
+				 , l.str_observacoes_posicao_prole
+			FROM public.tb_litigancia l
+			left join tb_polo p on l.int_polo_id = p.int_polo_id
+			--left join vw_parte
+			left join public.tb_situacao_uso_droga sud on l.int_situacao_uso_droga_id = sud.int_situacao_uso_droga_id
+			left join public.tb_estado_civil ec on l.int_estado_civil_id = ec.int_estado_civil_id
+			left join public.tb_escolaridade e on l.int_escolaridade_id = e.int_escolaridade_id
+			left join public.tb_renda re on l.int_renda_id = re.int_renda_id
+			left join public.tb_religiao rl on l.int_religiao_id = rl.int_religiao_id
+			left join public.tb_posicao_prole pp on l.int_posicao_prole_id = pp.int_posicao_prole_id
+			left join public.tb_raca_etnia ret on l.int_raca_etnia_id = ret.int_raca_etnia_id
+
+			where
+            1=1
+			  and (p_int_litigancia_id is null or l.int_litigancia_id = p_int_litigancia_id)
+			  and (p_int_polo_id is null or l.int_polo_id = p_int_polo_id)
+			  and (p_str_numero_unico is null or l.str_numero_unico = p_str_numero_unico)
+			  and (p_int_parte_id is null or l.int_parte_id = p_int_parte_id)
+    ) rec_base
+    LIMIT v_tamanho_pagina
+    OFFSET v_inicio_pagina;
+
+END;
+$function$;
