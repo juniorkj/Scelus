@@ -7,6 +7,7 @@ import br.jus.tjma.scelus.dominio.dto.CadastroMpuResponse;
 import br.jus.tjma.scelus.dominio.dto.FiltroConsultaMpus;
 import br.jus.tjma.scelus.dominio.dto.MpuDTO;
 import br.jus.tjma.scelus.dominio.dto.MpuVinculadaDTO;
+import br.jus.tjma.scelus.dominio.dto.VinculoDisponivelMpuDTO;
 import br.jus.tjma.scelus.dominio.dto.VinculoMpuRequest;
 import br.jus.tjma.scelus.dominio.dto.VinculoMpuResponse;
 import java.sql.Timestamp;
@@ -49,7 +50,8 @@ public class MpuService {
         sql.append("SELECT int_mpu_id, str_numero_mpu, str_numero_unico, str_legislacao_fundamento, ");
         sql.append("       dta_decisao, bol_concedida, dta_intimacao_acusado, dta_intimacao_vitima, ");
         sql.append("       dta_ciencia_vitima, dta_ciencia_acusado, ");
-        sql.append("       bol_pedido_desistencia, bol_inquerito_instaurado, str_observacoes ");
+        sql.append("       bol_pedido_desistencia, bol_inquerito_instaurado, str_observacoes, ");
+        sql.append("       int_vitima_id, int_acusado_id ");
         sql.append("FROM public.tb_medida_protetiva_urgencia ");
         sql.append("WHERE 1=1 ");
 
@@ -61,7 +63,10 @@ public class MpuService {
         }
 
         if (filtro.getNumeroUnico() != null && !filtro.getNumeroUnico().isBlank()) {
-            sql.append("AND str_numero_unico = :numeroUnico ");
+            // O campo mascarado no frontend envia só dígitos; str_numero_unico
+            // é gravado formatado — compara ignorando a formatação dos dois lados.
+            sql.append("AND regexp_replace(str_numero_unico, '[^0-9]', '', 'g') "
+                    + "= regexp_replace(:numeroUnico, '[^0-9]', '', 'g') ");
             parametros.addValue("numeroUnico", filtro.getNumeroUnico());
         }
 
@@ -106,7 +111,8 @@ public class MpuService {
                 "SELECT mpu.int_mpu_id, mpu.str_numero_mpu, mpu.str_numero_unico, mpu.str_legislacao_fundamento, "
                         + "       mpu.dta_decisao, mpu.bol_concedida, mpu.dta_intimacao_acusado, mpu.dta_intimacao_vitima, "
                         + "       mpu.dta_ciencia_vitima, mpu.dta_ciencia_acusado, "
-                        + "       mpu.bol_pedido_desistencia, mpu.bol_inquerito_instaurado, mpu.str_observacoes "
+                        + "       mpu.bol_pedido_desistencia, mpu.bol_inquerito_instaurado, mpu.str_observacoes, "
+                        + "       mpu.int_vitima_id, mpu.int_acusado_id "
                         + "FROM public.tb_medida_protetiva_urgencia mpu "
                         + "JOIN public.tb_vitima v ON v.int_vitima_id = mpu.int_vitima_id "
                         + "JOIN public.tb_litigancia lv ON lv.int_litigancia_id = v.int_litigancia_id "
@@ -131,7 +137,8 @@ public class MpuService {
                 "SELECT int_mpu_id, str_numero_mpu, str_numero_unico, str_legislacao_fundamento, "
                         + "dta_decisao, bol_concedida, dta_intimacao_acusado, dta_intimacao_vitima, "
                         + "dta_ciencia_vitima, dta_ciencia_acusado, "
-                        + "bol_pedido_desistencia, bol_inquerito_instaurado, str_observacoes "
+                        + "bol_pedido_desistencia, bol_inquerito_instaurado, str_observacoes, "
+                        + "int_vitima_id, int_acusado_id "
                         + "FROM public.tb_medida_protetiva_urgencia WHERE int_mpu_id = :idMpu",
                 parametros,
                 this::mapearMpu);
@@ -172,7 +179,48 @@ public class MpuService {
                 paraLocalDateTime(rs.getTimestamp("dta_ciencia_acusado")),
                 rs.getString("bol_pedido_desistencia"),
                 rs.getString("bol_inquerito_instaurado"),
-                rs.getString("str_observacoes"));
+                rs.getString("str_observacoes"),
+                (Long) rs.getObject("int_vitima_id"),
+                (Long) rs.getObject("int_acusado_id"));
+    }
+
+    /**
+     * Lista as vítimas/acusados já cadastrados no Scelus para o número de
+     * processo informado (litigâncias com fato ocorrido já registrado),
+     * disponíveis para vincular a uma MPU cadastrada pela tela avulsa.
+     *
+     * <p>Ao contrário de {@link #buscarPorPar}, esta consulta não depende de
+     * partes do PJe — usa diretamente {@code tb_litigancia.str_numero_unico},
+     * já que aqui o objetivo é apenas reaproveitar vítima/acusado que já
+     * existem no Scelus para este processo específico (RE02/RE03 do CSU008:
+     * a MPU só pode se vincular a um par cujo fato ocorrido já foi
+     * cadastrado — não existe, na especificação, cadastro de MPU "solta",
+     * sem fato ocorrido).
+     *
+     * @param numeroUnico Número único (CNJ) do processo.
+     * @return Litigâncias (vítima/acusado) já cadastradas para o processo.
+     */
+    @Transactional(readOnly = true)
+    public List<VinculoDisponivelMpuDTO> buscarVinculosDisponiveis(String numeroUnico) {
+        MapSqlParameterSource parametros = new MapSqlParameterSource("numeroUnico", numeroUnico);
+
+        return jdbcTemplate.query(
+                "SELECT l.int_parte_id AS idParte, p.str_polo AS polo, "
+                        + "       v.int_vitima_id AS idVitima, a.int_acusado_id AS idAcusado "
+                        + "FROM public.tb_litigancia l "
+                        + "LEFT JOIN public.tb_polo p ON p.int_polo_id = l.int_polo_id "
+                        + "LEFT JOIN public.tb_vitima v ON v.int_litigancia_id = l.int_litigancia_id "
+                        + "LEFT JOIN public.tb_acusado a ON a.int_litigancia_id = l.int_litigancia_id "
+                        // Compara só os dígitos: o frontend envia o número sem a máscara
+                        // (0800922...), mas tb_litigancia.str_numero_unico é gravado
+                        // formatado (0800922-09.2021.8.10.0037).
+                        + "WHERE regexp_replace(l.str_numero_unico, '[^0-9]', '', 'g') "
+                        + "    = regexp_replace(:numeroUnico, '[^0-9]', '', 'g') "
+                        + "AND (v.int_vitima_id IS NOT NULL OR a.int_acusado_id IS NOT NULL)",
+                parametros,
+                (rs, rowNum) -> new VinculoDisponivelMpuDTO(
+                        rs.getLong("idParte"), rs.getString("polo"), (Long) rs.getObject("idVitima"), (Long)
+                                rs.getObject("idAcusado")));
     }
 
     /**

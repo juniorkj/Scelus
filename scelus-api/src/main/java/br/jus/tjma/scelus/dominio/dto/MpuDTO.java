@@ -25,4 +25,6 @@ public record MpuDTO(
         LocalDateTime dataCienciaAcusado,
         String pedidoDesistencia,
         String inqueritoInstaurado,
-        String observacoes) {}
+        String observacoes,
+        Long idVitima,
+        Long idAcusado) {}

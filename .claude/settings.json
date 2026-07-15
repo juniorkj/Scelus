@@ -8,7 +8,16 @@
       "Bash(mvn -q test -o)",
       "Bash(python scratch/fix_changelog_sentinela.py)",
       "Bash(git status *)",
-      "Bash(awk '{print $1, $2}')"
+      "Bash(awk '{print $1, $2}')",
+      "Bash(python3 -c ' *)",
+      "Bash(python -c ' *)",
+      "Bash(python scratch/fix_encoding_fase4.py)",
+      "Bash(python scratch/check_encoding.py)",
+      "Bash(python scratch/diff_check.py)",
+      "Bash(python scratch/apply_encoding_fix.py)",
+      "Bash(python scratch/scan_vault_mojibake.py)",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\" \"http://localhost:8080/api/mpus/vinculos-disponiveis?numeroUnico=0800922-09.2021.8.10.0037\")",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\" \"http://localhost:8080/scelus-api/api/mpus/rota-que-nao-existe-teste123\")"
     ]
   }
 }

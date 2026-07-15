@@ -119,7 +119,10 @@ public class CrimeService {
         MapSqlParameterSource parametros = new MapSqlParameterSource();
 
         if (filtro.getNumeroProcesso() != null && !filtro.getNumeroProcesso().isBlank()) {
-            sql.append("AND p.str_numero_unico = :numeroProcesso ");
+            // O campo mascarado no frontend envia só dígitos; str_numero_unico
+            // é gravado formatado — compara ignorando a formatação dos dois lados.
+            sql.append("AND regexp_replace(p.str_numero_unico, '[^0-9]', '', 'g') "
+                    + "= regexp_replace(:numeroProcesso, '[^0-9]', '', 'g') ");
             parametros.addValue("numeroProcesso", filtro.getNumeroProcesso());
         }
 

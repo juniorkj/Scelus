@@ -116,6 +116,16 @@ export interface MpuDTO {
   pedidoDesistencia?: string;
   inqueritoInstaurado?: string;
   observacoes?: string;
+  idVitima?: number;
+  idAcusado?: number;
+}
+
+/** Vítima/acusado já cadastrado no Scelus para um processo, disponível para vincular a uma MPU avulsa (CSU008). */
+export interface VinculoDisponivelMpu {
+  idParte: number;
+  polo: string;
+  idVitima?: number;
+  idAcusado?: number;
 }
 
 /** MPU vinculada a um fato ocorrido com justificativa. */

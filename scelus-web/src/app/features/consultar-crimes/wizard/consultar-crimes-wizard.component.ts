@@ -1,5 +1,6 @@
 import { Component, inject, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { toDateOnly } from '../../../core/utils/date.util';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -509,7 +510,7 @@ export class ConsultarCrimesWizardComponent {
               }
 
               this.fatoCodigoAssunto = detalhe.fatoOcorrido.codigoAssunto;
-              this.dataFato = detalhe.fatoOcorrido.dataFato;
+              this.dataFato = toDateOnly(detalhe.fatoOcorrido.dataFato);
               this.medidaProtetiva = detalhe.fatoOcorrido.medidaProtetiva;
               this.fatoIdCep = detalhe.fatoOcorrido.idCep;
               this.cepOptionsFato = [

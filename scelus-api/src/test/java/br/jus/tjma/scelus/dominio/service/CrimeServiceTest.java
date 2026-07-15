@@ -147,7 +147,9 @@ class CrimeServiceTest {
 
             var capturado = capturarSqlEParametros(filtroVazio, List.of(crimeDTO()));
 
-            assertThat(capturado.sqlPaginado()).contains("AND p.str_numero_unico = :numeroProcesso");
+            assertThat(capturado.sqlPaginado())
+                    .contains(
+                            "regexp_replace(p.str_numero_unico, '[^0-9]', '', 'g') = regexp_replace(:numeroProcesso, '[^0-9]', '', 'g')");
             assertThat(capturado.parametros().getValue("numeroProcesso")).isEqualTo("0001234-56.2024.8.10.0001");
         }
 
@@ -386,7 +388,8 @@ class CrimeServiceTest {
             var capturado = capturarSqlEParametros(filtroVazio, List.of(crimeDTO()));
 
             assertThat(capturado.sqlPaginado())
-                    .contains("AND p.str_numero_unico = :numeroProcesso")
+                    .contains(
+                            "regexp_replace(p.str_numero_unico, '[^0-9]', '', 'g') = regexp_replace(:numeroProcesso, '[^0-9]', '', 'g')")
                     .contains("AND f.bol_medida_protetiva = :medidaProtetiva")
                     .contains("UPPER(v_pje.str_nome) LIKE UPPER(:nomeVitima)");
 

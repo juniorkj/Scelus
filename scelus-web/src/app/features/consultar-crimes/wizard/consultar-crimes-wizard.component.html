@@ -19,7 +19,7 @@
             <div class="col-md-5">
               <tj-input
                 #numeroProcessoInput
-                label="Número do Processo (CNJ)"
+                label="Número do Processo"
                 name="numeroProcesso"
                 [required]="true"
                 mask="0000000-00.0000.0.00.0000"
@@ -1266,57 +1266,64 @@
             @if (!modoSomenteLeitura) {
               @if (buscandoMpuIdentificadas) {
                 <div class="alert alert-info mt-2">Buscando MPUs do par...</div>
-              } @else if (!mpuOptionsParaVincular.length) {
+              } @else if (!mpuIdentificadas.length) {
                 <div class="alert alert-warning mt-2">
                   Nenhuma MPU localizada para este par vítima-acusado (RN008.02
                   — busca global, independente do processo). Cadastre uma nova
                   MPU em <a [routerLink]="['/mpus', 'new']">Registrar MPU</a>
                   antes de vinculá-la aqui.
                 </div>
+              } @else if (!mpuOptionsParaVincular.length) {
+                <div class="alert alert-success mt-2">
+                  Todas as MPUs identificadas para este par vítima-acusado já
+                  estão vinculadas a este fato ocorrido (veja a tabela abaixo).
+                </div>
               }
-              <div class="row g-2 align-items-end">
-                <div class="col-md-5">
-                  <tj-select
-                    label="MPU (par vítima-acusado)"
-                    name="mpu"
-                    [options]="mpuOptionsParaVincular"
-                    [ngModel]="mpuSelecionada?.id"
-                    (ngModelChange)="onMpuParaVincularSelecionada($event)"
-                    placeholder="Selecione a MPU"></tj-select>
+              @if (mpuOptionsParaVincular.length) {
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-5">
+                    <tj-select
+                      label="MPU (par vítima-acusado)"
+                      name="mpu"
+                      [options]="mpuOptionsParaVincular"
+                      [ngModel]="mpuSelecionada?.id"
+                      (ngModelChange)="onMpuParaVincularSelecionada($event)"
+                      placeholder="Selecione a MPU"></tj-select>
+                  </div>
+                  <div class="col-md-4">
+                    <tj-select
+                      label="Justificativa de Inclusão"
+                      name="idJustificativaInclusaoMpu"
+                      [options]="justificativaOptions"
+                      [(ngModel)]="vinculoMpu.idJustificativaInclusaoMpu"
+                      placeholder="Selecione a justificativa"></tj-select>
+                  </div>
+                  <div class="col-md-3">
+                    <button
+                      type="button"
+                      tj-button-primary
+                      [disabled]="!podeVincularMpu"
+                      (click)="vincularMpu()">
+                      {{ vinculandoMpu ? 'Vinculando...' : 'Vincular MPU' }}
+                    </button>
+                  </div>
                 </div>
-                <div class="col-md-4">
-                  <tj-select
-                    label="Justificativa de Inclusão"
-                    name="idJustificativaInclusaoMpu"
-                    [options]="justificativaOptions"
-                    [(ngModel)]="vinculoMpu.idJustificativaInclusaoMpu"
-                    placeholder="Selecione a justificativa"></tj-select>
+                <div class="row g-2">
+                  <div class="col-md-12">
+                    <tj-textarea
+                      label="Observação da Justificativa"
+                      name="observacaoJustificativa"
+                      [required]="
+                        ehJustificativaOutros(
+                          vinculoMpu.idJustificativaInclusaoMpu
+                        )
+                      "
+                      [(ngModel)]="
+                        vinculoMpu.observacaoJustificativa
+                      "></tj-textarea>
+                  </div>
                 </div>
-                <div class="col-md-3">
-                  <button
-                    type="button"
-                    tj-button-primary
-                    [disabled]="!podeVincularMpu"
-                    (click)="vincularMpu()">
-                    {{ vinculandoMpu ? 'Vinculando...' : 'Vincular MPU' }}
-                  </button>
-                </div>
-              </div>
-              <div class="row g-2">
-                <div class="col-md-12">
-                  <tj-textarea
-                    label="Observação da Justificativa"
-                    name="observacaoJustificativa"
-                    [required]="
-                      ehJustificativaOutros(
-                        vinculoMpu.idJustificativaInclusaoMpu
-                      )
-                    "
-                    [(ngModel)]="
-                      vinculoMpu.observacaoJustificativa
-                    "></tj-textarea>
-                </div>
-              </div>
+              }
             }
 
             <div class="table-responsive mt-3">
@@ -1465,7 +1472,7 @@
                   </h6>
                   <div class="mb-2">
                     <span class="small text-muted d-block"
-                      >Número do Processo (CNJ)</span
+                      >Número do Processo</span
                     >
                     <strong class="text-dark">{{
                       processoPje?.numeroUnico || '—'
