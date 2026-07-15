@@ -433,8 +433,9 @@ $function$;
 ALTER TABLE public.tb_processo_crime
 ADD COLUMN IF NOT EXISTS str_descricao_assunto character varying;
 
--- ── Correção pkg_litigancia.fn_litigancia_con — 4 bugs (só se manifestam em runtime, pois PL/pgSQL
--- não valida a SQL interna do RETURN QUERY na criação da função) ──
+-- ── Correção pkg_litigancia.fn_litigancia_con — 5 bugs (só se manifestam em runtime, pois PL/pgSQL
+-- não valida a SQL interna do RETURN QUERY na criação da função; cada bug só aparece depois que o
+-- anterior é corrigido, pois a execução aborta no primeiro problema encontrado) ──
 --   1. p_str_numero_unico declarado bigint, mas comparado com l.str_numero_unico (varchar) — causava
 --      "operator does not exist: character varying = bigint" em toda chamada (GET /crimes/{id}/completo),
 --      mesmo com o parâmetro NULL (curto-circuito do OR não evita a checagem de tipo em tempo de planejamento).
@@ -444,6 +445,16 @@ ADD COLUMN IF NOT EXISTS str_descricao_assunto character varying;
 --   4. "ORDER BY rec_base.int_inscricao_id" — coluna não existe em rec_base (nenhuma coluna com esse
 --      nome é selecionada na subquery); trocado para rec_base.int_litigancia_id, seguindo o padrão de
 --      outras fn_*_con que ordenam a paginação pela PK da tabela principal.
+--   5. "'???' as str_parte" — literal sem cast é inferido como "text" pelo Postgres, mas a coluna
+--      de retorno é "character varying" — "structure of query does not match function result type"
+--      na coluna 6. Correção: '???'::character varying.
+--
+-- Nota (14/07): ao aplicar a correção do bug 1 em DEV via CREATE OR REPLACE, o Postgres não substituiu
+-- a função antiga — mudar o tipo de um parâmetro de entrada cria uma assinatura diferente (overload),
+-- não uma substituição. Foi necessário localizar e remover manualmente o overload antigo
+-- (DROP FUNCTION pkg_litigancia.fn_litigancia_con(bigint, bigint, bigint, bigint, integer, integer))
+-- antes de reaplicar. Quem for aplicar este script do zero num ambiente que já tenha a versão antiga
+-- deve verificar se não sobrou overload duplicado (SELECT ... FROM pg_proc WHERE proname = 'fn_litigancia_con').
 CREATE OR REPLACE FUNCTION pkg_litigancia.fn_litigancia_con(p_int_litigancia_id bigint DEFAULT NULL::bigint, p_int_polo_id bigint DEFAULT NULL::bigint, p_str_numero_unico character varying DEFAULT NULL::character varying, p_int_parte_id bigint DEFAULT NULL::bigint, p_int_start_row integer DEFAULT NULL::integer, p_int_end_row integer DEFAULT NULL::integer)
  RETURNS TABLE(int_litigancia_id bigint, int_polo_id bigint, str_polo character varying, str_numero_unico character varying, int_parte_id bigint, str_parte character varying, int_situacao_uso_droga_id bigint, str_situacao_uso_droga character varying, int_estado_civil_id bigint, str_estado_civil character varying, int_escolaridade_id bigint, str_escolaridade character varying, int_renda_id bigint, str_renda character varying, int_religiao_id bigint, str_religiao character varying, int_posicao_prole_id bigint, int_prole bigint, int_posicao bigint, int_raca_etnia_id bigint, str_raca_etnia character varying, str_observacoes_posicao_prole character varying, int_reg bigint, int_total_count bigint)
  LANGUAGE plpgsql
@@ -510,7 +521,7 @@ BEGIN
 				 , p.str_polo
 				 , l.str_numero_unico
 				 , l.int_parte_id
-			     , '???' as str_parte
+			     , '???'::character varying as str_parte
 				 , l.int_situacao_uso_droga_id
 				 , sud.str_situacao_uso_droga
 				 , l.int_estado_civil_id

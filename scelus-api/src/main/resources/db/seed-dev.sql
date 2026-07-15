@@ -58,7 +58,7 @@ SELECT r, v, d FROM (VALUES
     ('Versão 1.0.0 — Julho/2026', '1.0.0', 'CSU001 — Consulta dinâmica de crimes do processo com filtros simples e avançados.'),
     ('Versão 1.0.0 — Julho/2026', '1.0.0', 'CSU002 — Cadastro de crimes com importação de processo e partes do PJe.'),
     ('Versão 1.0.0 — Julho/2026', '1.0.0', 'CSU008 — Cadastro e vínculo de Medidas Protetivas de Urgência (MPU) com justificativa obrigatória.'),
-    ('Versão 1.0.0 — Julho/2026', '1.0.0', 'Autenticação integrada ao Sentinela (SSO) com controle de permissões por objeto.')
+    ('Versão 1.0.0 — Julho/2026', '1.0.0', 'Autenticação integrada ao Sentinela com controle de permissões por objeto.')
 ) AS t(r, v, d)
 WHERE NOT EXISTS (SELECT 1 FROM public.tb_change_log);
 

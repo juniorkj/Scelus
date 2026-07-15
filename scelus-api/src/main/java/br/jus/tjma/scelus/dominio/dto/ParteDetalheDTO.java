@@ -32,6 +32,7 @@ public record ParteDetalheDTO(
         List<Long> idsDroga,
         Long idEscutaJudicial,
         Long idCep,
+        String descricaoCep,
         List<BeneficioDetalheDTO> beneficios,
         List<ConfiguracaoFamiliarDetalheDTO> configuracoesFamiliares,
         Long possuiAntecedentes,

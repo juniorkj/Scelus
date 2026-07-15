@@ -1,5 +1,5 @@
 import { Component, inject, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -21,12 +21,10 @@ import {
   TjStepperModule,
   TjPaginaNavegacao,
   TjStepper,
-  TjSearchField,
 } from '@tjma/angular-21';
 import { ConsultarCrimesService } from '../consultar-crimes.service';
 import { ProcessoPjeService } from '../processo-pje.service';
 import { DominioService } from '../../../core/services/dominio.service';
-import { MpuSeletorComponent } from '../mpu-seletor/mpu-seletor.component';
 import { MpusService } from '../../mpus/mpus.service';
 import {
   CadastroCrimeCompletoRequest,
@@ -64,6 +62,7 @@ type Opcao = { label: string; value: number };
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     TjPage,
     TjCard,
     TjInput,
@@ -74,7 +73,6 @@ type Opcao = { label: string; value: number };
     TjDatePicker,
     TjButtonModule,
     TjStepperModule,
-    TjSearchField,
     MatStepperNext,
     MatStepperPrevious,
     MatStepperModule,
@@ -86,12 +84,6 @@ type Opcao = { label: string; value: number };
 export class ConsultarCrimesWizardComponent {
   @ViewChild('stepper') stepper!: TjStepper;
   @ViewChild('numeroProcessoInput') numeroProcessoInput!: TjInput;
-
-  /** Registra o componente do modal seletor de MPU assim que o campo é renderizado. */
-  @ViewChild(TjSearchField)
-  set mpuField(field: TjSearchField | undefined) {
-    field?.setDialogComponent(MpuSeletorComponent);
-  }
 
   private readonly router = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
@@ -329,11 +321,12 @@ export class ConsultarCrimesWizardComponent {
     if (novoIndice > this.maxPassoAtingido) {
       this.maxPassoAtingido = novoIndice;
     }
-    // RN008.02: ao chegar no passo do Fato Ocorrido em um cadastro novo, busca
-    // automaticamente as MPUs já cadastradas para o par vítima-acusado.
+    // RN008.02: ao chegar no passo do Fato Ocorrido, busca automaticamente as
+    // MPUs já cadastradas para o par vítima-acusado — tanto em cadastro novo
+    // quanto em edição (o vínculo manual também deve respeitar o par, não
+    // permitir vincular qualquer MPU do sistema).
     if (
       novoIndice === this.PASSO_FATO_OCORRIDO &&
-      !this.idFatoOcorrido &&
       !this.mpuIdentificadasBuscadas
     ) {
       this.buscarMpusIdentificadas();
@@ -455,6 +448,9 @@ export class ConsultarCrimesWizardComponent {
           erro?.error?.message ||
           'Não foi possível localizar o processo no PJe.';
       },
+      complete: () => {
+        this.buscandoPje = false;
+      },
     });
   }
 
@@ -497,7 +493,9 @@ export class ConsultarCrimesWizardComponent {
               if (detalhe.vitima.idCep) {
                 this.cepOptionsVitima = [
                   {
-                    label: `CEP ${detalhe.vitima.idCep}`,
+                    label:
+                      detalhe.vitima.descricaoCep ||
+                      `CEP ${detalhe.vitima.idCep}`,
                     value: detalhe.vitima.idCep,
                   },
                 ];
@@ -516,7 +514,9 @@ export class ConsultarCrimesWizardComponent {
               this.fatoIdCep = detalhe.fatoOcorrido.idCep;
               this.cepOptionsFato = [
                 {
-                  label: `CEP ${detalhe.fatoOcorrido.idCep}`,
+                  label:
+                    detalhe.fatoOcorrido.descricaoCep ||
+                    `CEP ${detalhe.fatoOcorrido.idCep}`,
                   value: detalhe.fatoOcorrido.idCep,
                 },
               ];
@@ -566,7 +566,10 @@ export class ConsultarCrimesWizardComponent {
   carregarMpusVinculadas(): void {
     if (!this.idFatoOcorrido) return;
     this.service.listarMpusDoFato(this.idFatoOcorrido).subscribe({
-      next: mpus => (this.mpusVinculadas = mpus),
+      next: mpus => {
+        this.mpusVinculadas = mpus;
+        this.atualizarMpuOptionsParaVincular();
+      },
     });
   }
 
@@ -609,6 +612,36 @@ export class ConsultarCrimesWizardComponent {
     });
   }
 
+  /**
+   * RN008.02 (edição): opções de MPU para vincular, restritas às identificadas
+   * para o par vítima-acusado (`mpuIdentificadas`), excluindo as já vinculadas
+   * a este fato — em vez de permitir buscar qualquer MPU do sistema.
+   *
+   * Campo simples atualizado só quando `mpuIdentificadas`/`mpusVinculadas`
+   * mudam de verdade (NÃO um getter): um getter recalculando um array novo a
+   * cada ciclo de change detection quebra o `@for` por identidade do
+   * `tj-select` e pode entrar em loop ao navegar entre passos não adjacentes.
+   */
+  mpuOptionsParaVincular: Opcao[] = [];
+
+  private atualizarMpuOptionsParaVincular(): void {
+    const idsJaVinculados = new Set(this.mpusVinculadas.map(v => v.idMpu));
+    this.mpuOptionsParaVincular = this.mpuIdentificadas
+      .filter(mpu => !idsJaVinculados.has(mpu.id))
+      .map(mpu => ({
+        label: `${mpu.numeroMpu || mpu.id} — ${mpu.legislacaoFundamento}`,
+        value: mpu.id,
+      }));
+  }
+
+  /** Atualiza `mpuSelecionada` (usado por `vincularMpu`) a partir do id escolhido no select. */
+  onMpuParaVincularSelecionada(idMpu: number | undefined): void {
+    const mpu = this.mpuIdentificadas.find(m => m.id === Number(idMpu));
+    this.mpuSelecionada = mpu
+      ? { id: mpu.id, numeroMpu: mpu.numeroMpu }
+      : undefined;
+  }
+
   get podeVincularMpu(): boolean {
     if (
       !this.mpuSelecionada?.id ||
@@ -639,6 +672,7 @@ export class ConsultarCrimesWizardComponent {
           this.mpuIdentificadas = mpus;
           this.mpuIdentificadasBuscadas = true;
           this.buscandoMpuIdentificadas = false;
+          this.atualizarMpuOptionsParaVincular();
         },
         error: () => {
           this.mpuIdentificadasBuscadas = true;
@@ -707,6 +741,7 @@ export class ConsultarCrimesWizardComponent {
   get podeAdicionarNovaMpu(): boolean {
     const n = this.novaMpu;
     if (
+      !n.numeroMpu ||
       !n.legislacaoFundamento ||
       !n.dataDecisao ||
       !n.concedida ||

@@ -308,6 +308,7 @@ export interface ParteDetalhe {
   idsDroga: number[];
   idEscutaJudicial?: number;
   idCep?: number;
+  descricaoCep?: string;
   beneficios: BeneficioDetalhe[];
   configuracoesFamiliares: ConfiguracaoFamiliarDetalhe[];
   possuiAntecedentes?: number;
@@ -341,6 +342,7 @@ export interface FatoOcorridoDetalhe {
   codigoAssunto: number;
   dataFato: string;
   idCep: number;
+  descricaoCep?: string;
   medidaProtetiva: string;
   comunicantes: ComunicanteDetalhe[];
 }

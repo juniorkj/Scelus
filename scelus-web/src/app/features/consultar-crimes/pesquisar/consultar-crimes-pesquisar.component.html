@@ -2,7 +2,7 @@
   <tj-filters [client]="this">
     <div class="row g-2">
       <!-- Filtros Principais -->
-      <div class="col-md-4 col-sm-6">
+      <div class="col-md-3 col-sm-6">
         <tj-input
           label="Número do Processo"
           [(ngModel)]="searchParams['numeroProcesso']"
@@ -14,6 +14,14 @@
       </div>
       <div class="col-md-3 col-sm-6">
         <tj-input
+          label="Crime (descrição)"
+          [(ngModel)]="searchParams['descricaoAssunto']"
+          name="descricaoAssunto"
+          placeholder="Ex: Violência Doméstica">
+        </tj-input>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <tj-input
           label="Código do Assunto"
           type="number"
           [(ngModel)]="searchParams['codigoAssunto']"
@@ -21,7 +29,7 @@
           placeholder="Ex: 14234">
         </tj-input>
       </div>
-      <div class="col-md-3 col-sm-6">
+      <div class="col-md-2 col-sm-6">
         <tj-input
           label="Data do Fato"
           type="date"
@@ -121,7 +129,18 @@
     <!-- SF01 — Filtros Avançados (Tela 1.2) -->
     @if (mostrarAvancados) {
       <hr class="mt-3" />
-      <div class="row g-3">
+      <div class="row g-2">
+        <div class="col-md-4">
+          <tj-input
+            label="Nome (Vítima ou Acusado)"
+            name="nome"
+            [(ngModel)]="searchParams['nome']"
+            placeholder="Busca em vítima e acusado...">
+            <tj-icon input-prefix icon="Search"></tj-icon>
+          </tj-input>
+        </div>
+      </div>
+      <div class="row g-3 mt-1">
         <div class="col-md-4">
           <h6 class="fw-semibold">Vítima</h6>
           <div class="row g-2">

@@ -128,6 +128,12 @@ public class CrimeService {
             parametros.addValue("codigoAssunto", filtro.getCodigoAssunto());
         }
 
+        if (filtro.getDescricaoAssunto() != null
+                && !filtro.getDescricaoAssunto().isBlank()) {
+            sql.append("AND UPPER(p.str_descricao_assunto) LIKE UPPER(:descricaoAssunto) ");
+            parametros.addValue("descricaoAssunto", "%" + filtro.getDescricaoAssunto() + "%");
+        }
+
         if (filtro.getNomeVitima() != null && !filtro.getNomeVitima().isBlank()) {
             sql.append("AND UPPER(v_pje.str_nome) LIKE UPPER(:nomeVitima) ");
             parametros.addValue("nomeVitima", "%" + filtro.getNomeVitima() + "%");
@@ -163,6 +169,11 @@ public class CrimeService {
             parametros.addValue("medidaProtetiva", filtro.getMedidaProtetiva());
         }
 
+        if (filtro.getNome() != null && !filtro.getNome().isBlank()) {
+            sql.append("AND (UPPER(v_pje.str_nome) LIKE UPPER(:nome) OR UPPER(a_pje.str_nome) LIKE UPPER(:nome)) ");
+            parametros.addValue("nome", "%" + filtro.getNome() + "%");
+        }
+
         aplicarFiltrosAvancados(sql, parametros, filtro);
         aplicarFiltrosCompostos(sql, parametros, filtro);
 
@@ -172,6 +183,11 @@ public class CrimeService {
         if (total == null) {
             total = 0L;
         }
+
+        // Ordenação estável — sem isso, a paginação pode repetir/perder registros
+        // entre páginas em consultas concorrentes (PostgreSQL não garante ordem
+        // implícita sem ORDER BY).
+        sql.append("ORDER BY f.int_fato_ocorrido_id DESC ");
 
         // Aplicação de paginação
         sql.append("LIMIT :limit OFFSET :offset");

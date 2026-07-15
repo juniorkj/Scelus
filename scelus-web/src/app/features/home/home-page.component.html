@@ -199,11 +199,9 @@
                     <span
                       class="badge"
                       [ngClass]="
-                        c.medidaProtetiva === 'S'
-                          ? 'bg-success'
-                          : 'bg-secondary'
+                        c.possuiMpu === 'S' ? 'bg-success' : 'bg-secondary'
                       ">
-                      {{ c.medidaProtetiva === 'S' ? 'Sim' : 'Não' }}
+                      {{ c.possuiMpu === 'S' ? 'Sim' : 'Não' }}
                     </span>
                   </td>
                 </tr>

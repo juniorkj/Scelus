@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(python \"C:\\\\Users\\\\anton\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-anton-git-Scelus\\\\e738de5b-35b2-4597-99ca-a900d36585e0\\\\scratchpad\\\\fn_mensagem.py\")"
+      "PowerShell(python \"C:\\\\Users\\\\anton\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-anton-git-Scelus\\\\e738de5b-35b2-4597-99ca-a900d36585e0\\\\scratchpad\\\\fn_mensagem.py\")",
+      "Bash(python scratch/apply_fn_litigancia_con_fix.py)",
+      "Bash(mvn -q spotless:apply -o)",
+      "Bash(mvn -q compile -o)",
+      "Bash(mvn -q test -o)",
+      "Bash(python scratch/fix_changelog_sentinela.py)",
+      "Bash(git status *)",
+      "Bash(awk '{print $1, $2}')"
     ]
   }
 }

@@ -18,6 +18,7 @@ import br.jus.tjma.scelus.dominio.model.ProcessoCrime;
 import br.jus.tjma.scelus.dominio.model.Vitima;
 import br.jus.tjma.scelus.dominio.repository.AcusadoRepository;
 import br.jus.tjma.scelus.dominio.repository.BeneficioRepository;
+import br.jus.tjma.scelus.dominio.repository.CepRepository;
 import br.jus.tjma.scelus.dominio.repository.ComunicanteRepository;
 import br.jus.tjma.scelus.dominio.repository.ConfiguracaoFamiliarRepository;
 import br.jus.tjma.scelus.dominio.repository.ConsequenciaViolenciaRepository;
@@ -59,6 +60,7 @@ public class CrimeCompletoDetalheService {
     private final VitimaRepository vitimaRepository;
     private final AcusadoRepository acusadoRepository;
     private final VinculoRepository vinculoRepository;
+    private final CepRepository cepRepository;
     private final BeneficioRepository beneficioRepository;
     private final ConfiguracaoFamiliarRepository configuracaoFamiliarRepository;
     private final ConsequenciaViolenciaRepository consequenciaViolenciaRepository;
@@ -76,6 +78,7 @@ public class CrimeCompletoDetalheService {
             VitimaRepository vitimaRepository,
             AcusadoRepository acusadoRepository,
             VinculoRepository vinculoRepository,
+            CepRepository cepRepository,
             BeneficioRepository beneficioRepository,
             ConfiguracaoFamiliarRepository configuracaoFamiliarRepository,
             ConsequenciaViolenciaRepository consequenciaViolenciaRepository,
@@ -91,6 +94,7 @@ public class CrimeCompletoDetalheService {
         this.vitimaRepository = vitimaRepository;
         this.acusadoRepository = acusadoRepository;
         this.vinculoRepository = vinculoRepository;
+        this.cepRepository = cepRepository;
         this.beneficioRepository = beneficioRepository;
         this.configuracaoFamiliarRepository = configuracaoFamiliarRepository;
         this.consequenciaViolenciaRepository = consequenciaViolenciaRepository;
@@ -151,6 +155,7 @@ public class CrimeCompletoDetalheService {
                 processoCrimeFato.getCodigoAssunto(),
                 fato.getDataFato(),
                 fato.getIdCep(),
+                descricaoCep(fato.getIdCep()),
                 fato.getMedidaProtetiva(),
                 montarComunicantes(idFatoOcorrido));
 
@@ -198,6 +203,7 @@ public class CrimeCompletoDetalheService {
                         .map(l -> l.getIdEscutaJudicial())
                         .orElse(null),
                 vitima.getIdCep(),
+                descricaoCep(vitima.getIdCep()),
                 beneficioRepository.findByIdLitigancia(vitima.getIdLitigancia()).stream()
                         .map(b -> new BeneficioDetalheDTO(b.getId(), b.getIdTipoBeneficio(), b.getDataInicio()))
                         .toList(),
@@ -239,6 +245,7 @@ public class CrimeCompletoDetalheService {
                         .findFirst()
                         .map(l -> l.getIdEscutaJudicial())
                         .orElse(null),
+                null,
                 null,
                 beneficioRepository.findByIdLitigancia(acusado.getIdLitigancia()).stream()
                         .map(b -> new BeneficioDetalheDTO(b.getId(), b.getIdTipoBeneficio(), b.getDataInicio()))
@@ -298,6 +305,26 @@ public class CrimeCompletoDetalheService {
             throw new EntidadeNaoEncontradaException("Litigância não encontrada: " + idLitigancia);
         }
         return resultado.get(0);
+    }
+
+    /**
+     * Monta a descrição legível do CEP (mesmo formato usado na busca de CEP do
+     * frontend: "CEP — logradouro município/UF"), evitando que a tela de
+     * edição/visualização mostre apenas o id numérico do registro de CEP.
+     */
+    private String descricaoCep(Long idCep) {
+        if (idCep == null) {
+            return null;
+        }
+        return cepRepository
+                .findById(idCep)
+                .map(cep -> "%s — %s %s/%s"
+                        .formatted(
+                                cep.getCep(),
+                                cep.getLogradouro() == null ? "" : cep.getLogradouro(),
+                                cep.getMunicipio() == null ? "" : cep.getMunicipio(),
+                                cep.getUf() == null ? "" : cep.getUf()))
+                .orElse(null);
     }
 
     private Long numero(Object valor) {

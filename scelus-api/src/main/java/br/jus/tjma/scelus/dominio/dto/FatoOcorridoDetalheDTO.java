@@ -17,5 +17,6 @@ public record FatoOcorridoDetalheDTO(
         Long codigoAssunto,
         LocalDateTime dataFato,
         Long idCep,
+        String descricaoCep,
         String medidaProtetiva,
         List<ComunicanteDetalheDTO> comunicantes) {}

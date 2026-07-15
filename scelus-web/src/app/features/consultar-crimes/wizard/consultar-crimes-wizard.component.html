@@ -433,7 +433,7 @@
             <tj-icon icon="UserCheck"></tj-icon> Dados do Acusado
           </h6>
           <div class="row g-2">
-            <div class="col-md-6">
+            <div class="col-md-4">
               <tj-select
                 label="Parte (PJe)"
                 name="idParteAcusado"
@@ -443,7 +443,7 @@
                 (ngModelChange)="onParteSelecionada('acusado', $event)"
                 placeholder="Selecione o acusado"></tj-select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <tj-select
                 label="Polo Processual"
                 name="idPoloAcusado"
@@ -452,7 +452,7 @@
                 [(ngModel)]="acusado.idPolo"
                 placeholder="Selecione o polo"></tj-select>
             </div>
-            <div class="col-md-1">
+            <div class="col-md-3">
               <tj-radio
                 label="Antecedentes?"
                 name="possuiAntecedentes"
@@ -460,7 +460,7 @@
                 [options]="simNaoNumericoOptions"
                 [(ngModel)]="acusado.possuiAntecedentes"></tj-radio>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-3">
               <tj-radio
                 label="Reincidente?"
                 name="reincidente"
@@ -1099,6 +1099,7 @@
                   <tj-input
                     label="MPU Número"
                     name="novaMpuNumero"
+                    [required]="true"
                     [(ngModel)]="novaMpu.numeroMpu"></tj-input>
                 </div>
                 <div class="col-md-3">
@@ -1263,16 +1264,25 @@
             </h6>
 
             @if (!modoSomenteLeitura) {
+              @if (buscandoMpuIdentificadas) {
+                <div class="alert alert-info mt-2">Buscando MPUs do par...</div>
+              } @else if (!mpuOptionsParaVincular.length) {
+                <div class="alert alert-warning mt-2">
+                  Nenhuma MPU localizada para este par vítima-acusado (RN008.02
+                  — busca global, independente do processo). Cadastre uma nova
+                  MPU em <a [routerLink]="['/mpus', 'new']">Registrar MPU</a>
+                  antes de vinculá-la aqui.
+                </div>
+              }
               <div class="row g-2 align-items-end">
                 <div class="col-md-5">
-                  <tj-search-field
-                    label="MPU"
+                  <tj-select
+                    label="MPU (par vítima-acusado)"
                     name="mpu"
-                    paramCodigo="id"
-                    paramDescricao="numeroMpu"
-                    labelCode="Código"
-                    tituloDialogo="Consulta de Medidas Protetivas de Urgência"
-                    [(ngModel)]="mpuSelecionada"></tj-search-field>
+                    [options]="mpuOptionsParaVincular"
+                    [ngModel]="mpuSelecionada?.id"
+                    (ngModelChange)="onMpuParaVincularSelecionada($event)"
+                    placeholder="Selecione a MPU"></tj-select>
                 </div>
                 <div class="col-md-4">
                   <tj-select

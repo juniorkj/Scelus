@@ -22,6 +22,9 @@ public class FiltroConsultaCrimes extends FiltroPesquisaWeb {
     // ── Filtros simples (Tela 1.1) ──
     private String numeroProcesso;
     private Long codigoAssunto;
+    /** Busca textual pela descrição do crime (complementa codigoAssunto — spec pede VW_CRIME.str_descricao_assunto). */
+    private String descricaoAssunto;
+
     private String nomeVitima;
     private String cpfVitima;
     private String nomeAcusado;
@@ -30,6 +33,10 @@ public class FiltroConsultaCrimes extends FiltroPesquisaWeb {
     private Long idConsequenciaViolencia;
     private LocalDate dataFato;
     private String medidaProtetiva;
+
+    // ── Filtros avançados (Tela 1.2) ──
+    /** RN da Tela 1.2: busca por nome em VW_PARTE, casando com vítima OU acusado (OR). */
+    private String nome;
 
     // ── Filtros avançados — Vítima (Tela 1.2) ──
     private Long idOcupacaoVitima;
@@ -87,6 +94,14 @@ public class FiltroConsultaCrimes extends FiltroPesquisaWeb {
 
     public void setCodigoAssunto(Long v) {
         this.codigoAssunto = v;
+    }
+
+    public String getDescricaoAssunto() {
+        return descricaoAssunto;
+    }
+
+    public void setDescricaoAssunto(String v) {
+        this.descricaoAssunto = v;
     }
 
     public String getNomeVitima() {
@@ -151,6 +166,14 @@ public class FiltroConsultaCrimes extends FiltroPesquisaWeb {
 
     public void setMedidaProtetiva(String v) {
         this.medidaProtetiva = v;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String v) {
+        this.nome = v;
     }
 
     public Long getIdOcupacaoVitima() {

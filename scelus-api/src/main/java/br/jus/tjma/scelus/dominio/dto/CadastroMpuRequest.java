@@ -34,5 +34,5 @@ public record CadastroMpuRequest(
         String observacoes,
         Long idAcusado,
         Long idVitima,
-        String numeroMpu,
+        @NotBlank(message = "O número da MPU é obrigatório.") String numeroMpu,
         String numeroUnico) {}

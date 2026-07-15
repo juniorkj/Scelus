@@ -16,7 +16,7 @@ try:
         row = cursor.fetchone()
         print("   Sucesso no dblink cru! Resultado:", row)
         
-        real_proc = '0836084-52.2016.8.10.0001'
+        real_proc = '0000680-60.2018.8.10.0111'
         print(f"\n2. Testando função pkg_processo.fn_processo_pje_con com o processo {real_proc}...")
         cursor.execute(f"SELECT * FROM pkg_processo.fn_processo_pje_con('{real_proc}');")
         proc = cursor.fetchone()
