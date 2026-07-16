@@ -34,6 +34,7 @@ target/
 ### Application secrets — NUNCA commitar ###
 application-local.yml
 *.env
+!variables.*.env
 .env*
 !.env.dev
 **/secrets/
