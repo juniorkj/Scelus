@@ -7,6 +7,33 @@ spring:
   application:
     name: scelus-api
 
+  # ── DataSources (Postgres e Sentinela) ───────────────────────────────────────
+  datasource:
+    postgres:
+      url: ${SPRING_DATASOURCE_POSTGRES_URL:jdbc:postgresql://posdleg.tjma.jus.br:5432/dba_scelus}
+      username: ${SPRING_DATASOURCE_POSTGRES_USERNAME:dba_scelus}
+      password: ${POSTGRES_DB_PASSWORD:dba_scelus}
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        pool-name: PostgresPool
+        maximum-pool-size: 10
+        minimum-idle: 2
+        connection-timeout: 30000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+        connection-test-query: SELECT 1
+    sentinela:
+      url: ${SPRING_DATASOURCE_SENTINELA_URL:jdbc:oracle:thin:@//oradpjma:1521/pjma}
+      username: ${SPRING_DATASOURCE_SENTINELA_USERNAME:dba_sentinela}
+      password: ${SENTINELA_DB_PASSWORD:dba_sentinela}
+      driver-class-name: oracle.jdbc.OracleDriver
+      hikari:
+        pool-name: SentinelaPool
+        maximum-pool-size: 5
+        minimum-idle: 1
+        connection-timeout: 30000
+        connection-test-query: SELECT 1 FROM DUAL
+
   # ── Spring Boot Autoconfigure: desabilitar autoconfigs conflitantes ──────────
   autoconfigure:
     exclude:
