@@ -37,7 +37,10 @@ export class AppComponent implements OnInit, OnDestroy {
   /**
    * Corrige o comportamento do botão "Sair".
    * A infra por padrão tenta chamar /scelus-api/logout, que resulta em 500.
-   * Forçamos o redirecionamento para o fluxo de logout do Sentinela.
+   * Forçamos o redirecionamento para o fluxo de logout do Sentinela, usando a
+   * URL base que o próprio backend informou no login (header Seguranca-URL,
+   * guardado pela infra em LOGIN_URL_KEY) — assim o destino acompanha o
+   * ambiente real (dev/homolog/prod) sem depender do environment do build.
    */
   private ajustarFluxoLogout(): void {
     this.authService.logout = () => {
@@ -47,18 +50,18 @@ export class AppComponent implements OnInit, OnDestroy {
       // Acessando via bracket notation para evitar erro de compilação com campo privado
       (this.authService as any)['_userContext']?.next(null);
 
-      localStorage.removeItem('USER_CONTEXT_KEY');
+      // TjStorage usa sessionStorage quando disponível, com fallback para localStorage
+      const storage = window.sessionStorage ?? window.localStorage;
+      storage.removeItem('USER_CONTEXT_KEY');
 
-      const sentinelaUrl = environment.sentinelaUrl;
-      const sistemaId = environment.sistemaId;
+      const sentinelaUrl =
+        storage.getItem('LOGIN_URL_KEY') || environment.sentinelaUrl;
       const base = sentinelaUrl.endsWith('/')
         ? sentinelaUrl.slice(0, -1)
         : sentinelaUrl;
 
-      // Redireciona para o logout centralizado do TJMA
-      window.location.assign(
-        `${base}/LogoutAction.logout.mtw?sistema=${sistemaId}`
-      );
+      // Redireciona para o Sentinela — a própria página de base encerra a sessão SSO
+      window.location.assign(base);
     };
   }
 
