@@ -47,9 +47,23 @@ export const MENU: MenuItem[] = [
   {
     label: 'Medidas Protetivas',
     icon: 'Shield',
-    path: '/mpus',
     objetoSentinela: 'MpuController',
-    permissoes: 'LEITURA',
+    children: [
+      {
+        label: 'Consultar Medidas',
+        icon: 'Search',
+        path: '/mpus',
+        objetoSentinela: 'MpuController',
+        permissoes: 'LEITURA',
+      },
+      {
+        label: 'Cadastrar Medida',
+        icon: 'FilePlus',
+        path: '/mpus/new',
+        objetoSentinela: 'MpuController',
+        permissoes: 'INCLUSAO',
+      },
+    ],
   },
 ];
 
