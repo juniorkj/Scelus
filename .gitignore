@@ -27,6 +27,8 @@ infra-angular-21/
 **/.env.local
 **/.env.*.local
 **/credentials*
+# Arquivo de variáveis com senhas reais (gerado pelo deploy.sh a partir do template)
+variables.env
 
 # IDEs
 **/.idea/

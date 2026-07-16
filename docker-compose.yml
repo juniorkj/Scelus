@@ -1,0 +1,33 @@
+
+networks:
+  docker_tjma_apps:
+    name: docker_tjma_apps
+    external: true
+
+services:
+  scelus-api:
+    image: registro-ops.tjma.jus.br/tjma/scelus/scelus-api:latest
+    container_name: scelus-api
+    restart: always
+    networks:
+      docker_tjma_apps:
+    env_file:
+      - variables.env
+    extra_hosts:
+      - "orappjma.tjma.jus.br:172.30.0.54"
+      - "sso.tjma.jus.br:172.30.30.203"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./resolv.conf:/etc/resolv.conf
+
+  scelus-web:
+    image: registro-ops.tjma.jus.br/tjma/scelus/scelus-web:latest
+    container_name: scelus-web
+    restart: always
+    networks:
+      docker_tjma_apps:
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./resolv.conf:/etc/resolv.conf

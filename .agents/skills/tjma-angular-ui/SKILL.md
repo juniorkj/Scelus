@@ -106,6 +106,47 @@ Variantes: `tj-button-{ghost|primary|secondary|danger|success|warning|informatio
 
 ---
 
+## 7. Corrigindo bugs na própria biblioteca (`infra-angular-21`) e republicando
+
+Quando o bug está no componente da lib (não no uso dele pelo app), o fix é feito no repositório irmão `C:\Users\anton\git\Scelus\infra-angular-21` (`projects/tjma/src/lib/...`), não em `scelus-web`. Casos já resolvidos assim nesta base: `TjStepper` (ordem de `ngAfterContentInit`) e `TjRadio` (não mostrava `*` de obrigatório nem mensagem de erro — faltava usar a infra de `_msgError`/`getMsgError()` já existente em `TjFormFieldControl`, que `TjInput`/`TjSelect` já usam).
+
+### Passo a passo
+
+1. Edite o componente em `infra-angular-21/projects/tjma/src/lib/...`.
+2. Rode `npm run build` dentro de `infra-angular-21` — gera `dist/tjma/tjma-angular-21-0.0.1.tgz`.
+3. **Publique no Nexus** — `scelus-web` (assim como `frottas-web` e `AFROJUS`) consome `@tjma/angular-21` **pelo registro**, não por `file:`:
+   ```json
+   "@tjma/angular-21": "0.0.1"
+   ```
+   ```bash
+   cd infra-angular-21/dist/tjma
+   npm publish --registry https://nexusrepo.tjma.jus.br/repository/npm-releases/
+   ```
+   O `.npmrc` do projeto (conta `tjma-aplicacao`, já versionado) normalmente não tem permissão de `INCLUSAO` em `npm-releases` — o `npm publish` falha com `ENEEDAUTH`/`403`, e é preciso pedir credenciais de publicação ao usuário (uma conta com permissão, ex. `analise`) a cada vez, só para este comando — nunca fixar essas credenciais em arquivo versionado.
+   O consumo, porém, é sempre pelo registro **`npm-public`** (o `registry=` padrão do `.npmrc`, com as credenciais de `tjma-aplicacao` já configuradas) — publicar em `npm-releases` propaga automaticamente pra lá (Nexus trata `npm-public` como grupo que agrega `npm-releases`), então não é preciso nenhuma credencial especial para instalar depois de publicado.
+4. Reinstale em `scelus-web`.
+
+### ⚠️ Armadilha: reinstalar sem bump de versão (mesma versão `0.0.1`)
+
+Como a versão nunca muda (decisão do projeto — não incrementar `0.0.1`), tanto o **cache do npm** quanto o **`package-lock.json`** guardam o hash de integridade (SHA-512) do tarball anterior. Um `npm install` normal depois de publicar de novo **silenciosamente instala a versão antiga** (sem erro, sem aviso) ou falha com `EINTEGRITY` — foi assim que o fix do `TjRadio` quase passou despercebido: build e publish deram certo, mas `node_modules/@tjma/angular-21` continuou com o conteúdo antigo até forçar a reinstalação.
+
+**Sempre depois de publicar:**
+```bash
+cd scelus-web
+rm -rf node_modules/@tjma/angular-21
+npm install --no-audit --no-fund
+```
+Se mesmo assim o npm reclamar de integridade, use `--force` (`npm install --force`) — o hash antigo travado no lockfile é a causa mais comum.
+
+**Depois de reinstalar, sempre confirme que o fix realmente entrou** antes de seguir (não confie só no "added 1 package"):
+```bash
+grep -c "<algo do seu fix>" node_modules/@tjma/angular-21/fesm2022/tjma-angular-21.mjs
+```
+
+> Durante uma correção específica desta sessão, o `package.json` chegou a apontar temporariamente para um tarball local (`file:../infra-angular-21/dist/tjma/tjma-angular-21-0.0.1.tgz`) só para validar o fix mais rápido sem depender do Nexus — mas isso **não é o padrão do projeto** e foi revertido para `"0.0.1"` (via registro), igual aos demais projetos TJMA. Não deixe esse atalho `file:` persistir no `package.json` depois de validar.
+
+---
+
 ## 💡 Diretrizes e Padrões de Desenvolvimento (Mandatório)
 
 1. **Preferência por Observables:** Sempre que aplicável, utilize e dê preferência ao uso de `Observable` (RxJS) para a gerência de dados e fluxos assíncronos no frontend Angular.

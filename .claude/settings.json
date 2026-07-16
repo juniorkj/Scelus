@@ -17,7 +17,13 @@
       "Bash(python scratch/apply_encoding_fix.py)",
       "Bash(python scratch/scan_vault_mojibake.py)",
       "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\" \"http://localhost:8080/api/mpus/vinculos-disponiveis?numeroUnico=0800922-09.2021.8.10.0037\")",
-      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\" \"http://localhost:8080/scelus-api/api/mpus/rota-que-nao-existe-teste123\")"
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\" \"http://localhost:8080/scelus-api/api/mpus/rota-que-nao-existe-teste123\")",
+      "Bash(python scratch/fix_medida_protetiva_fato19.py)",
+      "Bash(npm publish *)",
+      "Bash(cp .npmrc .npmrc.bak)",
+      "Bash(cp .npmrc.tmp-publish .npmrc)",
+      "Bash(tar -xzOf /c/Users/anton/git/Scelus/infra-angular-21/dist/tjma/tjma-angular-21-0.0.1.tgz package/fesm2022/tjma-angular-21.mjs)",
+      "Bash(curl -s -u \"tjma-aplicacao:8p6HD1H\" \"https://nexusrepo.tjma.jus.br/repository/npm-public/@tjma%2fangular-21\")"
     ]
   }
 }
