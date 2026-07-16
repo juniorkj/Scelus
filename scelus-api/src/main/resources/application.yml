@@ -80,7 +80,7 @@ server:
 sentinela:
   enabled: true
   id-sistema: scelus   # nome exato cadastrado no Oracle Sentinela
-  url-base: https://sistemasd.tjma.jus.br/sentinela/  # Default para desenvolvimento
+  url-base: ${TJMA_SENTINELA_URL:https://sistemasd.tjma.jus.br/sentinela/}
   frontend-url: ${SENTINELA_FRONTEND_URL:https://sistemasd.tjma.jus.br/scelus/}
 
 # Propriedade lida diretamente pelo Ambiente (infra-spring/seguranca.properties)
@@ -140,7 +140,7 @@ spring:
     activate:
       on-profile: homolog
 sentinela:
-  url-base: https://sistemash.tjma.jus.br/sentinela/
+  url-base: ${TJMA_SENTINELA_URL:https://sistemash.tjma.jus.br/sentinela/}
   frontend-url: ${SENTINELA_FRONTEND_URL:https://sistemash.tjma.jus.br/scelus/}
 tjma:
   ambiente: homologacao
@@ -152,7 +152,7 @@ spring:
     activate:
       on-profile: prod
 sentinela:
-  url-base: https://sistemas.tjma.jus.br/sentinela/
+  url-base: ${TJMA_SENTINELA_URL:https://sistemas.tjma.jus.br/sentinela/}
   frontend-url: ${SENTINELA_FRONTEND_URL:https://sistemas.tjma.jus.br/scelus/}
 tjma:
   ambiente: producao
