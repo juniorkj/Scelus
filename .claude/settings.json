@@ -23,7 +23,7 @@
       "Bash(cp .npmrc .npmrc.bak)",
       "Bash(cp .npmrc.tmp-publish .npmrc)",
       "Bash(tar -xzOf /c/Users/anton/git/Scelus/infra-angular-21/dist/tjma/tjma-angular-21-0.0.1.tgz package/fesm2022/tjma-angular-21.mjs)",
-      "Bash(curl -s -u \"tjma-aplicacao:8p6HD1H\" \"https://nexusrepo.tjma.jus.br/repository/npm-public/@tjma%2fangular-21\")"
+      "Bash(curl -s -u \"<usuario>:<senha>\" \"https://nexusrepo.tjma.jus.br/repository/npm-public/@tjma%2fangular-21\")"
     ]
   }
 }

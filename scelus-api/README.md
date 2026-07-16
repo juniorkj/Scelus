@@ -191,7 +191,7 @@ do template `variables.dev.env` — nunca versionado com senhas reais).
 ```bash
 # Verificar imagens enviadas ao Registry
 # (Use --ssl-no-revoke no Windows para contornar erro de CRL do certificado TJMA)
-curl --ssl-no-revoke -u desenv:d3s3nv_tjm@ https://registro-ops.tjma.jus.br/v2/tjma/scelus/scelus-api/tags/list
+curl --ssl-no-revoke -u <usuario>:<senha> https://registro-ops.tjma.jus.br/v2/tjma/scelus/scelus-api/tags/list
 
 # Teste de saúde via proxy (DEV)
 curl https://sistemasd.tjma.jus.br/scelus-api/actuator/health

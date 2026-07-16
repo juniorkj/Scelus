@@ -115,8 +115,8 @@ O `deploy.sh` fará o `git pull` na branch correspondente, o `docker compose pul
 
 # 1. Checar imagens enviadas ao Registry (se necessário)
 # (Use --ssl-no-revoke no Windows para evitar o erro de CRL do certificado TJMA)
-curl --ssl-no-revoke -u desenv:d3s3nv_tjm@ https://registro-ops.tjma.jus.br/v2/tjma/scelus/scelus-api/tags/list
-curl --ssl-no-revoke -u desenv:d3s3nv_tjm@ https://registro-ops.tjma.jus.br/v2/tjma/scelus/scelus-web/tags/list
+curl --ssl-no-revoke -u <usuario>:<senha> https://registro-ops.tjma.jus.br/v2/tjma/scelus/scelus-api/tags/list
+curl --ssl-no-revoke -u <usuario>:<senha> https://registro-ops.tjma.jus.br/v2/tjma/scelus/scelus-web/tags/list
 
 # 2. Containers rodando no servidor
 docker ps | grep scelus
