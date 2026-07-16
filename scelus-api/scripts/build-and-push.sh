@@ -10,7 +10,8 @@ set -euo pipefail
 REGISTRY="registro-ops.tjma.jus.br/tjma/scelus"
 VERSION="${1:-latest}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+API_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(dirname "$API_ROOT")"
 
 echo "🔨 Scelus — Build & Push"
 echo "   Registry : $REGISTRY"
@@ -20,7 +21,7 @@ echo "────────────────────────�
 # ── 1. Build do Backend (Maven) ───────────────────────────────────────
 echo ""
 echo "📦 [1/4] Compilando scelus-api com Maven..."
-cd "$PROJECT_ROOT/scelus-api"
+cd "$API_ROOT"
 mvn package -DskipTests -B -s ci/settings.xml
 
 # ── 2. Docker Build da API ────────────────────────────────────────────
