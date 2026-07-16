@@ -11,13 +11,13 @@ API REST do Sistema Scelus do TJMA — Spring Boot 4 + Java 21.
 
 ## Rodando localmente
 
-1. **Dentro de `scelus-api/`**, copie `.env.example` para `.env` e preencha as senhas:
+1. **Dentro de `scelus-api/`**, copie `.env.dev` para `.env` e ajuste se necessário:
 
    ```
-   POSTGRES_DB_PASSWORD=<senha_dba_scelus>
-   SENTINELA_DB_PASSWORD=<senha_sentinela>
-   TJMA_AMBIENTE=DESENV-LOCAL
-   SPRING_PROFILES_ACTIVE=local
+   POSTGRES_DB_PASSWORD=dba_scelus
+   SENTINELA_DB_PASSWORD=dba_sentinela
+   TJMA_AMBIENTE=DESENV
+   SPRING_PROFILES_ACTIVE=desenv
    TJMA_SENTINELA_URL=https://sistemasd.tjma.jus.br/sentinela
    ```
 

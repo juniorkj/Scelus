@@ -13,7 +13,7 @@ Monorepo com backend e frontend do Scelus.
 
 ```bash
 # Backend (scelus-api/)
-# 1. Copie o .env.example para .env e preencha as senhas
+# 1. Copie o .env.dev para .env e ajuste se necessário
 ./run-local.sh
 # → http://localhost:8080/scelus-api/swagger-ui.html
 

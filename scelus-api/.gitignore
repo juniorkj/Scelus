@@ -35,6 +35,7 @@ target/
 application-local.yml
 *.env
 .env*
+!.env.dev
 **/secrets/
 **/credentials/
 
