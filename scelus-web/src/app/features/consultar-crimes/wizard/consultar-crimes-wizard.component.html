@@ -121,7 +121,6 @@
               <tj-date-picker
                 label="Início da Tipificação"
                 name="dataInicioTipificacao"
-                [required]="true"
                 [(ngModel)]="
                   novoCrimeCometido.dataInicioTipificacao
                 "></tj-date-picker>
@@ -162,8 +161,8 @@
                         c.descricaoAssunto || descricaoAssunto(c.codigoAssunto)
                       }}
                     </td>
-                    <td>{{ c.dataInicioTipificacao | date: 'dd/MM/yyyy' }}</td>
-                    <td>{{ c.dataFimTipificacao | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ (c.dataInicioTipificacao | date: 'dd/MM/yyyy') || '—' }}</td>
+                    <td>{{ (c.dataFimTipificacao | date: 'dd/MM/yyyy') || '—' }}</td>
                     <td class="text-end">
                       <button
                         type="button"
@@ -268,14 +267,6 @@
                 [options]="dominios['racasEtnias']"
                 [(ngModel)]="vitima.idRacaEtnia"
                 placeholder="Selecione"></tj-select>
-            </div>
-            <div class="col-md-4">
-              <tj-select
-                label="Escuta Judicial"
-                name="idEscutaJudicialVitima"
-                [options]="dominios['escutasJudiciais']"
-                [(ngModel)]="vitima.idEscutaJudicial"
-                placeholder="Selecione (opcional)"></tj-select>
             </div>
           </div>
 
@@ -518,14 +509,6 @@
                 [options]="dominios['racasEtnias']"
                 [(ngModel)]="acusado.idRacaEtnia"
                 placeholder="Selecione"></tj-select>
-            </div>
-            <div class="col-md-4">
-              <tj-select
-                label="Escuta Judicial"
-                name="idEscutaJudicialAcusado"
-                [options]="dominios['escutasJudiciais']"
-                [(ngModel)]="acusado.idEscutaJudicial"
-                placeholder="Selecione (opcional)"></tj-select>
             </div>
           </div>
 
@@ -970,248 +953,176 @@
             </table>
           </div>
 
-          @if (!idFatoOcorrido) {
-            <!-- CSU008 (Telas 8.1/8.2/8.3): cadastro novo — estado temporário até Finalizar (RN008.07) -->
-            <hr />
-            <h6 class="section-title">
-              <tj-icon icon="Shield"></tj-icon>
-              Medidas Protetivas de Urgência (MPU)
-            </h6>
+          <hr />
+          <h6 class="section-title">
+            <tj-icon icon="Shield"></tj-icon>
+            Medidas Protetivas de Urgência (MPU)
+          </h6>
 
-            @if (buscandoMpuIdentificadas) {
-              <div class="text-muted small mb-2">
-                Buscando MPUs já cadastradas para este par...
+          @if (outrosVinculosMpu.length) {
+            <!-- Regra 3: MPU vinculada a várias partes / parte vinculada a várias MPUs -->
+            <div class="alert alert-warning">
+              <strong>Atenção:</strong> vítima e/ou acusado já possuem MPU
+              vinculada em outro(s) processo(s):
+              <ul class="mb-0 mt-1">
+                @for (v of outrosVinculosMpu; track v.idMpu) {
+                  <li>
+                    MPU {{ v.numeroMpu || v.idMpu }} — processo
+                    {{ v.numeroUnicoProcesso || '—' }} ({{
+                      v.papel === 'vitima' ? 'vítima' : 'acusado'
+                    }})
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (!modoSomenteLeitura && !itemPendenteJustificativaMpu) {
+            <div class="row g-2">
+              <div class="col-auto">
+                <button
+                  type="button"
+                  tj-button-secondary
+                  (click)="abrirModalBuscarMpu()">
+                  <tj-icon icon="Search"></tj-icon>
+                  Buscar MPU na Base
+                </button>
               </div>
-            }
+              <div class="col-auto">
+                <button
+                  type="button"
+                  tj-button-secondary
+                  (click)="abrirModalNovaMpu()">
+                  <tj-icon icon="FilePlus"></tj-icon>
+                  Cadastrar Nova MPU
+                </button>
+              </div>
+            </div>
+          }
 
-            @if (
-              mpuIdentificadasBuscadas &&
-              mpuIdentificadas.length &&
-              !mpuSelecionadaParaJustificativa
-            ) {
-              <!-- Tela 8.2: MPU Identificadas -->
-              <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle">
-                  <thead class="table-light">
+          @if (buscandoMpuIdentificadas) {
+            <div class="text-muted small mt-2">
+              Buscando MPUs já cadastradas para este par...
+            </div>
+          }
+
+          @if (
+            !modoSomenteLeitura &&
+            !itemPendenteJustificativaMpu &&
+            mpuIdentificadasBuscadas &&
+            mpuIdentificadasDisponiveis.length
+          ) {
+            <!-- MPUs identificadas (RN008.02) ou trazidas pela busca ampla -->
+            <div class="table-responsive mt-2">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col">Nº MPU</th>
+                    <th scope="col">Legislação/Fundamento</th>
+                    <th scope="col">Data da Decisão</th>
+                    <th scope="col">Processo de Origem</th>
+                    <th scope="col">Concedida</th>
+                    <th scope="col" class="text-end">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (mpu of mpuIdentificadasDisponiveis; track mpu.id) {
                     <tr>
-                      <th scope="col">Nº MPU</th>
-                      <th scope="col">Legislação/Fundamento</th>
-                      <th scope="col">Data da Decisão</th>
-                      <th scope="col">Processo de Origem</th>
-                      <th scope="col">Concedida</th>
-                      <th scope="col" class="text-end">Ações</th>
+                      <td class="fw-semibold">
+                        {{ mpu.numeroMpu || mpu.id }}
+                      </td>
+                      <td>{{ mpu.legislacaoFundamento }}</td>
+                      <td>{{ mpu.dataDecisao | date: 'dd/MM/yyyy' }}</td>
+                      <td>{{ mpu.numeroUnico || '—' }}</td>
+                      <td>
+                        <span
+                          class="badge"
+                          [class.badge-status-sim]="mpu.concedida === 'S'"
+                          [class.badge-status-nao]="mpu.concedida === 'N'">
+                          {{ mpu.concedida === 'S' ? 'Sim' : 'Não' }}
+                        </span>
+                      </td>
+                      <td class="text-end">
+                        <button
+                          type="button"
+                          tj-button-secondary-sm
+                          (click)="selecionarMpuIdentificada(mpu)">
+                          Selecionar
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    @for (mpu of mpuIdentificadas; track mpu.id) {
-                      <tr>
-                        <td class="fw-semibold">
-                          {{ mpu.numeroMpu || mpu.id }}
-                        </td>
-                        <td>{{ mpu.legislacaoFundamento }}</td>
-                        <td>{{ mpu.dataDecisao | date: 'dd/MM/yyyy' }}</td>
-                        <td>{{ mpu.numeroUnico || '—' }}</td>
-                        <td>
-                          <span
-                            class="badge"
-                            [class.badge-status-sim]="mpu.concedida === 'S'"
-                            [class.badge-status-nao]="mpu.concedida === 'N'">
-                            {{ mpu.concedida === 'S' ? 'Sim' : 'Não' }}
-                          </span>
-                        </td>
-                        <td class="text-end">
-                          <button
-                            type="button"
-                            tj-button-secondary-sm
-                            (click)="selecionarMpuIdentificada(mpu)">
-                            Selecionar
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
 
-            @if (mpuSelecionadaParaJustificativa) {
-              <!-- Tela 8.3: Justificativa de Inclusão -->
-              <div class="alert alert-info">
+          @if (itemPendenteJustificativaMpu) {
+            <!-- Justificativa de Inclusão -->
+            <div class="alert alert-info mt-2">
+              @if (itemPendenteJustificativaMpu.tipo === 'existente') {
                 MPU selecionada:
                 <strong>{{
-                  mpuSelecionadaParaJustificativa.numeroMpu ||
-                    mpuSelecionadaParaJustificativa.id
+                  itemPendenteJustificativaMpu.mpu.numeroMpu ||
+                    itemPendenteJustificativaMpu.mpu.id
                 }}</strong>
-                — {{ mpuSelecionadaParaJustificativa.legislacaoFundamento }}
+                — {{ itemPendenteJustificativaMpu.mpu.legislacaoFundamento }}
+              } @else {
+                Nova MPU:
+                <strong>{{ itemPendenteJustificativaMpu.dados.numeroMpu }}</strong>
+                — {{ itemPendenteJustificativaMpu.dados.legislacaoFundamento }}
+              }
+            </div>
+            @if (erroItemMpu) {
+              <div class="alert alert-danger mt-1">{{ erroItemMpu }}</div>
+            }
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <tj-select
+                  label="Justificativa de Inclusão"
+                  name="justificativaMpu"
+                  [required]="true"
+                  [options]="justificativaOptions"
+                  [(ngModel)]="
+                    justificativaSelecionada.idJustificativaInclusaoMpu
+                  "
+                  placeholder="Selecione a justificativa"></tj-select>
               </div>
-              <div class="row g-2 align-items-end">
-                <div class="col-md-4">
-                  <tj-select
-                    label="Justificativa de Inclusão"
-                    name="justificativaMpuIdentificada"
-                    [required]="true"
-                    [options]="justificativaOptions"
-                    [(ngModel)]="
+              <div class="col-md-5">
+                <tj-textarea
+                  label="Observações"
+                  name="observacaoJustificativaMpu"
+                  [required]="
+                    ehJustificativaOutros(
                       justificativaSelecionada.idJustificativaInclusaoMpu
-                    "
-                    placeholder="Selecione a justificativa"></tj-select>
-                </div>
-                <div class="col-md-5">
-                  <tj-textarea
-                    label="Observações"
-                    name="observacaoJustificativaMpuIdentificada"
-                    [required]="
-                      ehJustificativaOutros(
-                        justificativaSelecionada.idJustificativaInclusaoMpu
-                      )
-                    "
-                    [(ngModel)]="
-                      justificativaSelecionada.observacaoJustificativa
-                    "></tj-textarea>
-                </div>
-                <div class="col-md-3 d-flex gap-2">
-                  <button
-                    type="button"
-                    tj-button-secondary
-                    (click)="cancelarJustificativaMpu()">
-                    Voltar
-                  </button>
-                  <button
-                    type="button"
-                    tj-button-primary
-                    [disabled]="!podeConfirmarJustificativaMpu"
-                    (click)="confirmarJustificativaMpuIdentificada()">
-                    Concluir
-                  </button>
-                </div>
+                    )
+                  "
+                  [(ngModel)]="
+                    justificativaSelecionada.observacaoJustificativa
+                  "></tj-textarea>
               </div>
-            }
+              <div class="col-md-3 d-flex gap-2">
+                <button
+                  type="button"
+                  tj-button-secondary
+                  (click)="cancelarJustificativaMpu()">
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  tj-button-primary
+                  [disabled]="
+                    !podeConfirmarJustificativaMpu || processandoItemMpu
+                  "
+                  (click)="confirmarItemPendenteMpu()">
+                  {{ processandoItemMpu ? 'Processando...' : 'Concluir' }}
+                </button>
+              </div>
+            </div>
+          }
 
-            @if (mpuIdentificadasBuscadas && !mpuSelecionadaParaJustificativa) {
-              <!-- Tela 8.1: Cadastrar MPU nova -->
-              <hr />
-              <h6 class="section-title">
-                <tj-icon icon="FilePlus"></tj-icon>
-                Cadastrar Nova MPU
-              </h6>
-              <div class="row g-2">
-                <div class="col-md-3">
-                  <tj-input
-                    label="MPU Número"
-                    name="novaMpuNumero"
-                    [required]="true"
-                    [(ngModel)]="novaMpu.numeroMpu"></tj-input>
-                </div>
-                <div class="col-md-3">
-                  <tj-date-picker
-                    label="Data da Decisão"
-                    name="novaMpuDataDecisao"
-                    [required]="true"
-                    [(ngModel)]="novaMpu.dataDecisao"></tj-date-picker>
-                </div>
-                <div class="col-md-4">
-                  <tj-input
-                    label="Legislação/Fundamento"
-                    name="novaMpuLegislacao"
-                    [required]="true"
-                    [(ngModel)]="novaMpu.legislacaoFundamento"></tj-input>
-                </div>
-                <div class="col-md-2">
-                  <tj-radio
-                    label="Concedida?"
-                    name="novaMpuConcedida"
-                    [required]="true"
-                    [toLineInForm]="true"
-                    [options]="simNaoOptions"
-                    [(ngModel)]="novaMpu.concedida"></tj-radio>
-                </div>
-              </div>
-              <div class="row g-2 mt-1">
-                <div class="col-md-3">
-                  <tj-date-picker
-                    label="Intimação do Acusado"
-                    name="novaMpuIntimacaoAcusado"
-                    [required]="true"
-                    [(ngModel)]="novaMpu.dataIntimacaoAcusado"></tj-date-picker>
-                </div>
-                <div class="col-md-3">
-                  <tj-date-picker
-                    label="Intimação da Vítima"
-                    name="novaMpuIntimacaoVitima"
-                    [required]="true"
-                    [(ngModel)]="novaMpu.dataIntimacaoVitima"></tj-date-picker>
-                </div>
-                <div class="col-md-3">
-                  <tj-date-picker
-                    label="Ciência do Acusado"
-                    name="novaMpuCienciaAcusado"
-                    [(ngModel)]="novaMpu.dataCienciaAcusado"></tj-date-picker>
-                </div>
-                <div class="col-md-3">
-                  <tj-date-picker
-                    label="Ciência da Vítima"
-                    name="novaMpuCienciaVitima"
-                    [(ngModel)]="novaMpu.dataCienciaVitima"></tj-date-picker>
-                </div>
-              </div>
-              <div class="row g-2 mt-1">
-                <div class="col-md-3">
-                  <tj-radio
-                    label="Pedido de Desistência?"
-                    name="novaMpuPedidoDesistencia"
-                    [required]="true"
-                    [toLineInForm]="true"
-                    [options]="simNaoOptions"
-                    [(ngModel)]="novaMpu.pedidoDesistencia"></tj-radio>
-                </div>
-                <div class="col-md-3">
-                  <tj-radio
-                    label="Inquérito Instaurado?"
-                    name="novaMpuInqueritoInstaurado"
-                    [required]="true"
-                    [toLineInForm]="true"
-                    [options]="simNaoOptions"
-                    [(ngModel)]="novaMpu.inqueritoInstaurado"></tj-radio>
-                </div>
-                <div class="col-md-6">
-                  <tj-input
-                    label="Observações"
-                    name="novaMpuObservacoes"
-                    [(ngModel)]="novaMpu.observacoes"></tj-input>
-                </div>
-              </div>
-              <div class="row g-2 mt-1 align-items-end">
-                <div class="col-md-4">
-                  <tj-select
-                    label="Justificativa de Inclusão"
-                    name="novaMpuJustificativa"
-                    [required]="true"
-                    [options]="justificativaOptions"
-                    [(ngModel)]="novaMpu.idJustificativaInclusaoMpu"
-                    placeholder="Selecione a justificativa"></tj-select>
-                </div>
-                <div class="col-md-5">
-                  <tj-textarea
-                    label="Observações da Justificativa"
-                    name="novaMpuObservacaoJustificativa"
-                    [required]="
-                      ehJustificativaOutros(novaMpu.idJustificativaInclusaoMpu)
-                    "
-                    [(ngModel)]="novaMpu.observacaoJustificativa"></tj-textarea>
-                </div>
-                <div class="col-md-3">
-                  <button
-                    type="button"
-                    tj-button-secondary
-                    [disabled]="!podeAdicionarNovaMpu"
-                    (click)="adicionarNovaMpu()">
-                    Adicionar
-                  </button>
-                </div>
-              </div>
-            }
-
-            <!-- RN008.06: Quadro Resumo (MPUs preparadas nesta sessão) -->
+          @if (!idFatoOcorrido) {
+            <!-- Quadro Resumo (MPUs preparadas nesta sessão — RN008.06/07) -->
             <div class="table-responsive mt-2">
               <table class="table table-sm table-hover">
                 <thead class="table-light">
@@ -1256,76 +1167,6 @@
           }
 
           @if (idFatoOcorrido) {
-            <!-- CSU008: Vínculo de Medidas Protetivas de Urgência -->
-            <hr />
-            <h6 class="section-title">
-              <tj-icon icon="Shield"></tj-icon>
-              Medidas Protetivas de Urgência (MPU)
-            </h6>
-
-            @if (!modoSomenteLeitura) {
-              @if (buscandoMpuIdentificadas) {
-                <div class="alert alert-info mt-2">Buscando MPUs do par...</div>
-              } @else if (!mpuIdentificadas.length) {
-                <div class="alert alert-warning mt-2">
-                  Nenhuma MPU localizada para este par vítima-acusado (RN008.02
-                  — busca global, independente do processo). Cadastre uma nova
-                  MPU em <a [routerLink]="['/mpus', 'new']">Registrar MPU</a>
-                  antes de vinculá-la aqui.
-                </div>
-              } @else if (!mpuOptionsParaVincular.length) {
-                <div class="alert alert-success mt-2">
-                  Todas as MPUs identificadas para este par vítima-acusado já
-                  estão vinculadas a este fato ocorrido (veja a tabela abaixo).
-                </div>
-              }
-              @if (mpuOptionsParaVincular.length) {
-                <div class="row g-2 align-items-end">
-                  <div class="col-md-5">
-                    <tj-select
-                      label="MPU (par vítima-acusado)"
-                      name="mpu"
-                      [options]="mpuOptionsParaVincular"
-                      [ngModel]="mpuSelecionada?.id"
-                      (ngModelChange)="onMpuParaVincularSelecionada($event)"
-                      placeholder="Selecione a MPU"></tj-select>
-                  </div>
-                  <div class="col-md-4">
-                    <tj-select
-                      label="Justificativa de Inclusão"
-                      name="idJustificativaInclusaoMpu"
-                      [options]="justificativaOptions"
-                      [(ngModel)]="vinculoMpu.idJustificativaInclusaoMpu"
-                      placeholder="Selecione a justificativa"></tj-select>
-                  </div>
-                  <div class="col-md-3">
-                    <button
-                      type="button"
-                      tj-button-primary
-                      [disabled]="!podeVincularMpu"
-                      (click)="vincularMpu()">
-                      {{ vinculandoMpu ? 'Vinculando...' : 'Vincular MPU' }}
-                    </button>
-                  </div>
-                </div>
-                <div class="row g-2">
-                  <div class="col-md-12">
-                    <tj-textarea
-                      label="Observação da Justificativa"
-                      name="observacaoJustificativa"
-                      [required]="
-                        ehJustificativaOutros(
-                          vinculoMpu.idJustificativaInclusaoMpu
-                        )
-                      "
-                      [(ngModel)]="
-                        vinculoMpu.observacaoJustificativa
-                      "></tj-textarea>
-                  </div>
-                </div>
-              }
-            }
-
             <div class="table-responsive mt-3">
               <table class="table table-sm table-hover align-middle">
                 <thead class="table-light">
@@ -1486,11 +1327,14 @@
                       <ul class="ps-3 mb-0 text-dark small">
                         @for (c of crimesCometidosList; track $index) {
                           <li>
-                            <strong>{{ c.codigoAssunto }}</strong> —
-                            {{ c.dataInicioTipificacao | date: 'dd/MM/yyyy' }}
-                            @if (c.dataFimTipificacao) {
-                              até
-                              {{ c.dataFimTipificacao | date: 'dd/MM/yyyy' }}
+                            <strong>{{ c.codigoAssunto }}</strong>
+                            @if (c.dataInicioTipificacao) {
+                              —
+                              {{ c.dataInicioTipificacao | date: 'dd/MM/yyyy' }}
+                              @if (c.dataFimTipificacao) {
+                                até
+                                {{ c.dataFimTipificacao | date: 'dd/MM/yyyy' }}
+                              }
                             }
                           </li>
                         }

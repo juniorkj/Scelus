@@ -63,16 +63,6 @@ export const routes: Routes = [
         title: 'Medidas Protetivas de Urgência — Scelus',
       },
       {
-        path: 'mpus/new',
-        canActivate: [authGuard],
-        data: { objetoSentinela: 'MpuController', permissoes: 'INCLUSAO' },
-        loadComponent: () =>
-          import('./features/mpus/manter/mpus-manter.component').then(
-            m => m.MpusManterComponent
-          ),
-        title: 'Cadastrar Medida Protetiva — Scelus',
-      },
-      {
         path: 'mpus/:id',
         canActivate: [authGuard],
         data: { objetoSentinela: 'MpuController', permissoes: 'LEITURA' },

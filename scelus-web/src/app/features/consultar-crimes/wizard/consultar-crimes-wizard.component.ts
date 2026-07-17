@@ -1,5 +1,5 @@
 import { Component, inject, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { toDateOnly } from '../../../core/utils/date.util';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +15,7 @@ import {
   TjRadio,
   TjSelect,
   TjTextarea,
+  TjDialog,
   TjIconModule,
   TjDatePicker,
   TjRadioOption,
@@ -22,23 +23,27 @@ import {
   TjStepperModule,
   TjPaginaNavegacao,
   TjStepper,
+  TjGlobalService,
 } from '@tjma/angular-21';
 import { ConsultarCrimesService } from '../consultar-crimes.service';
 import { ProcessoPjeService } from '../processo-pje.service';
 import { DominioService } from '../../../core/services/dominio.service';
 import { MpusService } from '../../mpus/mpus.service';
+import { MpuCadastroModalComponent } from '../../mpus/modal/mpu-cadastro-modal.component';
+import { MpuSelecaoModalComponent } from '../../mpus/modal/mpu-selecao-modal.component';
 import {
   CadastroCrimeCompletoRequest,
+  CadastroMpuDados,
   ComunicanteWizard,
   ConsequenciaViolenciaWizard,
   CrimeCometidoWizard,
   ItemDominio,
   MpuDTO,
   MpuVinculada,
+  MpuVinculoOutroProcesso,
   MpuVinculoWizard,
   ParteWizard,
   ProcessoPje,
-  VinculoMpuRequest,
 } from '../consultar-crimes.model';
 
 type Opcao = { label: string; value: number };
@@ -63,7 +68,6 @@ type Opcao = { label: string; value: number };
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     TjPage,
     TjCard,
     TjInput,
@@ -92,6 +96,8 @@ export class ConsultarCrimesWizardComponent {
   private readonly processoPjeService = inject(ProcessoPjeService);
   private readonly dominioService = inject(DominioService);
   private readonly mpusService = inject(MpusService);
+  private readonly globalService = inject(TjGlobalService);
+  private readonly dialog = inject(TjDialog);
 
   /** Identificador do fato ocorrido em edição/visualização (ausente em cadastro novo). */
   idFatoOcorrido?: number;
@@ -189,38 +195,37 @@ export class ConsultarCrimesWizardComponent {
 
   // ── MPU vinculada ao fato ocorrido (CSU008 — somente em edição/visualização) ──
   mpusVinculadas: MpuVinculada[] = [];
-  mpuSelecionada?: { id: number; numeroMpu?: string };
-  vinculoMpu: {
-    idJustificativaInclusaoMpu?: number;
-    observacaoJustificativa?: string;
-  } = {};
-  vinculandoMpu = false;
 
-  // ── CSU008 — Telas 8.1/8.2/8.3, estado em memória (cadastro novo, RN008.07) ──
+  // ── CSU008 — vínculo de MPU ao fato ocorrido (cadastro novo, RN008.07, e edição) ──
   mpusList: MpuVinculoWizard[] = [];
   mpuIdentificadas: MpuDTO[] = [];
   buscandoMpuIdentificadas = false;
   mpuIdentificadasBuscadas = false;
-  mpuSelecionadaParaJustificativa?: MpuDTO;
+  outrosVinculosMpu: MpuVinculoOutroProcesso[] = [];
+  buscandoOutrosVinculosMpu = false;
+
+  /** Item aguardando justificativa de inclusão — MPU já existente ou dados de uma nova (RN008.04/05). */
+  itemPendenteJustificativaMpu?:
+    | { tipo: 'existente'; mpu: MpuDTO }
+    | { tipo: 'nova'; dados: CadastroMpuDados };
   justificativaSelecionada: {
     idJustificativaInclusaoMpu?: number;
     observacaoJustificativa?: string;
   } = {};
-  novaMpu: {
-    numeroMpu?: string;
-    legislacaoFundamento?: string;
-    dataDecisao?: string;
-    concedida?: string;
-    dataIntimacaoAcusado?: string;
-    dataIntimacaoVitima?: string;
-    dataCienciaVitima?: string;
-    dataCienciaAcusado?: string;
-    pedidoDesistencia?: string;
-    inqueritoInstaurado?: string;
-    observacoes?: string;
-    idJustificativaInclusaoMpu?: number;
-    observacaoJustificativa?: string;
-  } = {};
+  processandoItemMpu = false;
+  erroItemMpu?: string;
+
+  /** MPUs identificadas (RN008.02 + busca ampla) que ainda não estão vinculadas a este fato. */
+  get mpuIdentificadasDisponiveis(): MpuDTO[] {
+    const idsJaVinculados = this.idFatoOcorrido
+      ? new Set(this.mpusVinculadas.map(v => v.idMpu))
+      : new Set(
+          this.mpusList
+            .filter(m => m.idMpuExistente != null)
+            .map(m => m.idMpuExistente)
+        );
+    return this.mpuIdentificadas.filter(m => !idsJaVinculados.has(m.id));
+  }
 
   salvando = false;
   erroFinalizar?: string;
@@ -244,7 +249,6 @@ export class ConsultarCrimesWizardComponent {
     ocupacoes: [],
     deficiencias: [],
     drogas: [],
-    escutasJudiciais: [],
     tiposBeneficio: [],
     tiposConfiguracaoFamiliar: [],
     tiposComunicante: [],
@@ -287,7 +291,6 @@ export class ConsultarCrimesWizardComponent {
       ['ocupacoes', 'ocupacoes'],
       ['deficiencias', 'deficiencias'],
       ['drogas', 'drogas'],
-      ['escutasJudiciais', 'escutas-judiciais'],
       ['tiposBeneficio', 'tipos-beneficio'],
       ['tiposConfiguracaoFamiliar', 'tipos-configuracao-familiar'],
       ['tiposComunicante', 'tipos-comunicante'],
@@ -567,35 +570,7 @@ export class ConsultarCrimesWizardComponent {
   carregarMpusVinculadas(): void {
     if (!this.idFatoOcorrido) return;
     this.service.listarMpusDoFato(this.idFatoOcorrido).subscribe({
-      next: mpus => {
-        this.mpusVinculadas = mpus;
-        this.atualizarMpuOptionsParaVincular();
-      },
-    });
-  }
-
-  vincularMpu(): void {
-    const idMpu = this.mpuSelecionada?.id;
-    const idJustificativa = this.vinculoMpu.idJustificativaInclusaoMpu;
-    if (!idMpu || !idJustificativa || !this.idFatoOcorrido) return;
-
-    const request: VinculoMpuRequest = {
-      idMpu: Number(idMpu),
-      idJustificativaInclusaoMpu: Number(idJustificativa),
-      observacaoJustificativa: this.vinculoMpu.observacaoJustificativa,
-    };
-
-    this.vinculandoMpu = true;
-    this.service.vincularMpu(this.idFatoOcorrido, request).subscribe({
-      next: () => {
-        this.vinculandoMpu = false;
-        this.mpuSelecionada = undefined;
-        this.vinculoMpu = {};
-        this.carregarMpusVinculadas();
-      },
-      error: () => {
-        this.vinculandoMpu = false;
-      },
+      next: mpus => (this.mpusVinculadas = mpus),
     });
   }
 
@@ -613,56 +588,9 @@ export class ConsultarCrimesWizardComponent {
     });
   }
 
-  /**
-   * RN008.02 (edição): opções de MPU para vincular, restritas às identificadas
-   * para o par vítima-acusado (`mpuIdentificadas`), excluindo as já vinculadas
-   * a este fato — em vez de permitir buscar qualquer MPU do sistema.
-   *
-   * Campo simples atualizado só quando `mpuIdentificadas`/`mpusVinculadas`
-   * mudam de verdade (NÃO um getter): um getter recalculando um array novo a
-   * cada ciclo de change detection quebra o `@for` por identidade do
-   * `tj-select` e pode entrar em loop ao navegar entre passos não adjacentes.
-   */
-  mpuOptionsParaVincular: Opcao[] = [];
+  // ── CSU008 — busca e vínculo de MPU (cadastro novo RN008.07, e edição) ──
 
-  private atualizarMpuOptionsParaVincular(): void {
-    const idsJaVinculados = new Set(this.mpusVinculadas.map(v => v.idMpu));
-    this.mpuOptionsParaVincular = this.mpuIdentificadas
-      .filter(mpu => !idsJaVinculados.has(mpu.id))
-      .map(mpu => ({
-        label: `${mpu.numeroMpu || mpu.id} — ${mpu.legislacaoFundamento}`,
-        value: mpu.id,
-      }));
-  }
-
-  /** Atualiza `mpuSelecionada` (usado por `vincularMpu`) a partir do id escolhido no select. */
-  onMpuParaVincularSelecionada(idMpu: number | undefined): void {
-    const mpu = this.mpuIdentificadas.find(m => m.id === Number(idMpu));
-    this.mpuSelecionada = mpu
-      ? { id: mpu.id, numeroMpu: mpu.numeroMpu }
-      : undefined;
-  }
-
-  get podeVincularMpu(): boolean {
-    if (
-      !this.mpuSelecionada?.id ||
-      !this.vinculoMpu.idJustificativaInclusaoMpu ||
-      this.vinculandoMpu
-    ) {
-      return false;
-    }
-    if (
-      this.ehJustificativaOutros(this.vinculoMpu.idJustificativaInclusaoMpu) &&
-      !this.vinculoMpu.observacaoJustificativa
-    ) {
-      return false;
-    }
-    return true;
-  }
-
-  // ── CSU008 (Telas 8.1/8.2/8.3) — cadastro novo: estado em memória (RN008.07) ──
-
-  /** RN008.02: busca global de MPUs para o par vítima-acusado, pelas partes do PJe. */
+  /** RN008.02: busca automática de MPUs para o par vítima-acusado, pelas partes do PJe. */
   buscarMpusIdentificadas(): void {
     if (!this.vitima.idParte || !this.acusado.idParte) return;
     this.buscandoMpuIdentificadas = true;
@@ -673,24 +601,81 @@ export class ConsultarCrimesWizardComponent {
           this.mpuIdentificadas = mpus;
           this.mpuIdentificadasBuscadas = true;
           this.buscandoMpuIdentificadas = false;
-          this.atualizarMpuOptionsParaVincular();
         },
         error: () => {
           this.mpuIdentificadasBuscadas = true;
           this.buscandoMpuIdentificadas = false;
         },
       });
+    this.buscarOutrosVinculosMpu();
   }
 
-  /** RN008.04: seleção explícita de uma MPU identificada, abrindo a Tela 8.3 (justificativa). */
+  /** Regra 3: alerta sobre MPUs já vinculadas à vítima ou ao acusado em outros processos. */
+  buscarOutrosVinculosMpu(): void {
+    if (!this.vitima.idParte || !this.acusado.idParte) return;
+    this.buscandoOutrosVinculosMpu = true;
+    this.mpusService
+      .buscarVinculosDeOutrosProcessos(
+        this.vitima.idParte,
+        this.acusado.idParte,
+        this.idFatoOcorrido
+      )
+      .subscribe({
+        next: vinculos => {
+          this.outrosVinculosMpu = vinculos;
+          this.buscandoOutrosVinculosMpu = false;
+        },
+        error: () => (this.buscandoOutrosVinculosMpu = false),
+      });
+  }
+
+  /** RN008.02 (busca ampla): pesquisa livre na base, com seleção múltipla, via modal. */
+  abrirModalBuscarMpu(): void {
+    this.dialog
+      .open(MpuSelecaoModalComponent, {
+        type: 'scrollable',
+        width: '960px',
+        state: { title: 'Buscar MPU na Base', cancel: false, confirm: false },
+      })
+      .afterClosed()
+      .subscribe((selecionadas?: MpuDTO[]) => {
+        if (!selecionadas?.length) return;
+        const idsExistentes = new Set(this.mpuIdentificadas.map(m => m.id));
+        const novas = selecionadas.filter(m => !idsExistentes.has(m.id));
+        this.mpuIdentificadas = [...this.mpuIdentificadas, ...novas];
+      });
+  }
+
+  /** Abre o formulário de nova MPU (dados próprios — CSU008) em modal, seguido da justificativa. */
+  abrirModalNovaMpu(): void {
+    this.dialog
+      .open(MpuCadastroModalComponent, {
+        type: 'scrollable',
+        width: '900px',
+        state: {
+          title: 'Cadastrar Nova MPU',
+          cancel: false,
+          confirm: false,
+        },
+      })
+      .afterClosed()
+      .subscribe((dados?: CadastroMpuDados) => {
+        if (!dados) return;
+        this.itemPendenteJustificativaMpu = { tipo: 'nova', dados };
+        this.justificativaSelecionada = {};
+      });
+  }
+
+  /** RN008.04: seleção explícita de uma MPU identificada, avançando para a justificativa. */
   selecionarMpuIdentificada(mpu: MpuDTO): void {
-    this.mpuSelecionadaParaJustificativa = mpu;
+    this.itemPendenteJustificativaMpu = { tipo: 'existente', mpu };
     this.justificativaSelecionada = {};
   }
 
   cancelarJustificativaMpu(): void {
-    this.mpuSelecionadaParaJustificativa = undefined;
+    this.itemPendenteJustificativaMpu = undefined;
     this.justificativaSelecionada = {};
+    this.erroItemMpu = undefined;
   }
 
   /** RN008.05: quando a justificativa selecionada for "Outros", a observação é obrigatória. */
@@ -716,84 +701,104 @@ export class ConsultarCrimesWizardComponent {
     return true;
   }
 
-  /** RN008.06: registra a associação temporária (MPU identificada + justificativa) no quadro Resumo. */
-  confirmarJustificativaMpuIdentificada(): void {
-    if (
-      !this.mpuSelecionadaParaJustificativa ||
-      !this.podeConfirmarJustificativaMpu
-    ) {
+  /**
+   * RN008.06: confirma o item pendente (MPU existente ou nova) com a
+   * justificativa. Em cadastro novo, só fica em memória até "Finalizar"
+   * (RN01). Em edição de um fato já salvo, grava/vincula de imediato.
+   */
+  confirmarItemPendenteMpu(): void {
+    const item = this.itemPendenteJustificativaMpu;
+    if (!item || !this.podeConfirmarJustificativaMpu) return;
+
+    const idJustificativaInclusaoMpu = Number(
+      this.justificativaSelecionada.idJustificativaInclusaoMpu
+    );
+    const observacaoJustificativa =
+      this.justificativaSelecionada.observacaoJustificativa;
+
+    if (!this.idFatoOcorrido) {
+      this.mpusList = [
+        ...this.mpusList,
+        item.tipo === 'existente'
+          ? {
+              idMpuExistente: item.mpu.id,
+              idJustificativaInclusaoMpu,
+              observacaoJustificativa,
+            }
+          : {
+              novaMpu: this.normalizarDadosMpu(item.dados),
+              idJustificativaInclusaoMpu,
+              observacaoJustificativa,
+            },
+      ];
+      this.cancelarJustificativaMpu();
       return;
     }
-    this.mpusList = [
-      ...this.mpusList,
-      {
-        idMpuExistente: this.mpuSelecionadaParaJustificativa.id,
-        idJustificativaInclusaoMpu: Number(
-          this.justificativaSelecionada.idJustificativaInclusaoMpu
-        ),
-        observacaoJustificativa:
-          this.justificativaSelecionada.observacaoJustificativa,
-      },
-    ];
-    this.mpuSelecionadaParaJustificativa = undefined;
-    this.justificativaSelecionada = {};
-  }
 
-  get podeAdicionarNovaMpu(): boolean {
-    const n = this.novaMpu;
-    if (
-      !n.numeroMpu ||
-      !n.legislacaoFundamento ||
-      !n.dataDecisao ||
-      !n.concedida ||
-      !n.dataIntimacaoAcusado ||
-      !n.dataIntimacaoVitima ||
-      !n.pedidoDesistencia ||
-      !n.inqueritoInstaurado ||
-      !n.idJustificativaInclusaoMpu
-    ) {
-      return false;
+    this.processandoItemMpu = true;
+    this.erroItemMpu = undefined;
+    const vincular = (idMpu: number): void => {
+      this.service
+        .vincularMpu(this.idFatoOcorrido!, {
+          idMpu,
+          idJustificativaInclusaoMpu,
+          observacaoJustificativa,
+        })
+        .subscribe({
+          next: () => {
+            this.processandoItemMpu = false;
+            this.carregarMpusVinculadas();
+            this.cancelarJustificativaMpu();
+          },
+          error: erro => {
+            this.processandoItemMpu = false;
+            this.erroItemMpu =
+              erro?.error?.detail ||
+              erro?.error?.message ||
+              'Não foi possível vincular a MPU.';
+          },
+        });
+    };
+
+    if (item.tipo === 'existente') {
+      vincular(item.mpu.id);
+      return;
     }
-    if (
-      this.ehJustificativaOutros(n.idJustificativaInclusaoMpu) &&
-      !n.observacaoJustificativa
-    ) {
-      return false;
-    }
-    return true;
-  }
 
-  /** RN008.01: registra temporariamente uma MPU nova, com processo/vítima/acusado do fato em pauta. */
-  adicionarNovaMpu(): void {
-    if (!this.podeAdicionarNovaMpu) return;
-    const n = this.novaMpu;
-
-    this.mpusList = [
-      ...this.mpusList,
-      {
-        novaMpu: {
-          legislacaoFundamento: n.legislacaoFundamento!,
-          dataDecisao: this.normalizarDataHora(n.dataDecisao),
-          concedida: n.concedida!,
-          dataIntimacaoAcusado: this.normalizarDataHora(n.dataIntimacaoAcusado),
-          dataIntimacaoVitima: this.normalizarDataHora(n.dataIntimacaoVitima),
-          dataCienciaVitima: n.dataCienciaVitima
-            ? this.normalizarDataHora(n.dataCienciaVitima)
-            : undefined,
-          dataCienciaAcusado: n.dataCienciaAcusado
-            ? this.normalizarDataHora(n.dataCienciaAcusado)
-            : undefined,
-          pedidoDesistencia: n.pedidoDesistencia!,
-          inqueritoInstaurado: n.inqueritoInstaurado!,
-          observacoes: n.observacoes,
-          numeroMpu: n.numeroMpu,
-          numeroUnico: this.processoPje?.numeroUnico,
+    this.mpusService
+      .create<{ idMpu: number }>({
+        ...this.normalizarDadosMpu(item.dados),
+        idVitima: this.vitima.idVitima,
+        idAcusado: this.acusado.idAcusado,
+      })
+      .subscribe({
+        next: resposta => vincular(resposta.idMpu),
+        error: erro => {
+          this.processandoItemMpu = false;
+          this.erroItemMpu =
+            erro?.error?.detail ||
+            erro?.error?.message ||
+            'Não foi possível cadastrar a MPU.';
         },
-        idJustificativaInclusaoMpu: Number(n.idJustificativaInclusaoMpu),
-        observacaoJustificativa: n.observacaoJustificativa,
-      },
-    ];
-    this.novaMpu = {};
+      });
+  }
+
+  private normalizarDadosMpu(dados: CadastroMpuDados): CadastroMpuDados {
+    return {
+      ...dados,
+      dataDecisao: this.normalizarDataHora(dados.dataDecisao),
+      dataIntimacaoAcusado: this.normalizarDataHora(
+        dados.dataIntimacaoAcusado
+      ),
+      dataIntimacaoVitima: this.normalizarDataHora(dados.dataIntimacaoVitima),
+      dataCienciaAcusado: dados.dataCienciaAcusado
+        ? this.normalizarDataHora(dados.dataCienciaAcusado)
+        : undefined,
+      dataCienciaVitima: dados.dataCienciaVitima
+        ? this.normalizarDataHora(dados.dataCienciaVitima)
+        : undefined,
+      numeroUnico: dados.numeroUnico || this.processoPje?.numeroUnico,
+    };
   }
 
   removerMpuStaged(index: number): void {
@@ -814,12 +819,20 @@ export class ConsultarCrimesWizardComponent {
   adicionarCrimeCometido(): void {
     const codigoAssunto = this.novoCrimeCometido.codigoAssunto;
     const dataInicio = this.novoCrimeCometido.dataInicioTipificacao;
-    if (!codigoAssunto || !dataInicio) return;
+    const dataFim = this.novoCrimeCometido.dataFimTipificacao;
+    if (!codigoAssunto) return;
     if (
       this.crimesCometidosList.some(
         c => c.codigoAssunto === Number(codigoAssunto)
       )
     ) {
+      return;
+    }
+    if (dataInicio && dataFim && new Date(dataFim) < new Date(dataInicio)) {
+      this.globalService.warn(
+        'Datas inválidas',
+        'O início da tipificação não pode ser posterior ao fim da tipificação.'
+      );
       return;
     }
 
@@ -832,9 +845,11 @@ export class ConsultarCrimesWizardComponent {
       {
         codigoAssunto: Number(codigoAssunto),
         descricaoAssunto: assunto?.descricao,
-        dataInicioTipificacao: this.normalizarDataHora(dataInicio),
-        dataFimTipificacao: this.novoCrimeCometido.dataFimTipificacao
-          ? this.normalizarDataHora(this.novoCrimeCometido.dataFimTipificacao)
+        dataInicioTipificacao: dataInicio
+          ? this.normalizarDataHora(dataInicio)
+          : undefined,
+        dataFimTipificacao: dataFim
+          ? this.normalizarDataHora(dataFim)
           : undefined,
       },
     ];

@@ -120,12 +120,13 @@ export interface MpuDTO {
   idAcusado?: number;
 }
 
-/** Vítima/acusado já cadastrado no Scelus para um processo, disponível para vincular a uma MPU avulsa (CSU008). */
-export interface VinculoDisponivelMpu {
-  idParte: number;
-  polo: string;
-  idVitima?: number;
-  idAcusado?: number;
+/** MPU já vinculada à vítima ou ao acusado em OUTRO processo/fato ocorrido (RN008.02). */
+export interface MpuVinculoOutroProcesso {
+  idMpu: number;
+  numeroMpu?: string;
+  numeroUnicoProcesso?: string;
+  concedida: string;
+  papel: 'vitima' | 'acusado';
 }
 
 /** MPU vinculada a um fato ocorrido com justificativa. */
@@ -195,6 +196,10 @@ export interface ParteWizard {
   chave: string;
   idParte: number;
   idPolo: number;
+  /** Identificador Scelus (tb_vitima) — só presente após `carregarDetalhe` (edição). */
+  idVitima?: number;
+  /** Identificador Scelus (tb_acusado) — só presente após `carregarDetalhe` (edição). */
+  idAcusado?: number;
   idSituacaoUsoDroga?: number;
   idEstadoCivil?: number;
   idEscolaridade?: number;
@@ -206,7 +211,6 @@ export interface ParteWizard {
   idsOcupacao?: number[];
   idsDeficiencia?: number[];
   idsDroga?: number[];
-  idEscutaJudicial?: number;
   idCep?: number;
   beneficios?: BeneficioWizard[];
   configuracoesFamiliares?: ConfiguracaoFamiliarWizard[];
@@ -219,7 +223,11 @@ export interface ParteWizard {
 export interface CrimeCometidoWizard {
   codigoAssunto: number;
   descricaoAssunto?: string;
-  dataInicioTipificacao: string;
+  /**
+   * Sem fonte confiável hoje (nem TPU/CNJ nem PJe fornecem essa data) — o
+   * usuário pode informar manualmente, mas não é obrigatório.
+   */
+  dataInicioTipificacao?: string;
   dataFimTipificacao?: string;
 }
 
@@ -234,23 +242,26 @@ export interface FatoOcorridoWizard {
   comunicantes?: ComunicanteWizard[];
 }
 
+/** Dados próprios de uma MPU nova (sem vínculo de parte) — formulário do CSU008, cadastrado via modal no CSU002. */
+export interface CadastroMpuDados {
+  legislacaoFundamento: string;
+  dataDecisao: string;
+  concedida: string;
+  dataIntimacaoAcusado: string;
+  dataIntimacaoVitima: string;
+  dataCienciaVitima?: string;
+  dataCienciaAcusado?: string;
+  pedidoDesistencia: string;
+  inqueritoInstaurado: string;
+  observacoes?: string;
+  numeroMpu?: string;
+  numeroUnico?: string;
+}
+
 /** Vínculo de MPU nova ou existente no wizard (Tela 2.8 → CSU008). */
 export interface MpuVinculoWizard {
   idMpuExistente?: number;
-  novaMpu?: {
-    legislacaoFundamento: string;
-    dataDecisao: string;
-    concedida: string;
-    dataIntimacaoAcusado: string;
-    dataIntimacaoVitima: string;
-    dataCienciaVitima?: string;
-    dataCienciaAcusado?: string;
-    pedidoDesistencia: string;
-    inqueritoInstaurado: string;
-    observacoes?: string;
-    numeroMpu?: string;
-    numeroUnico?: string;
-  };
+  novaMpu?: CadastroMpuDados;
   idJustificativaInclusaoMpu: number;
   observacaoJustificativa?: string;
 }
@@ -279,7 +290,7 @@ export interface CrimeCometidoDetalhe {
   idProcessoCrime: number;
   codigoAssunto: number;
   descricaoAssunto?: string;
-  dataInicioTipificacao: string;
+  dataInicioTipificacao?: string;
   dataFimTipificacao?: string;
 }
 
@@ -316,7 +327,6 @@ export interface ParteDetalhe {
   idsOcupacao: number[];
   idsDeficiencia: number[];
   idsDroga: number[];
-  idEscutaJudicial?: number;
   idCep?: number;
   descricaoCep?: string;
   beneficios: BeneficioDetalhe[];

@@ -44,65 +44,6 @@
         </div>
       </div>
 
-      <h6 class="section-title mt-3">
-        <tj-icon icon="Link"></tj-icon>
-        Vínculo com Vítima/Acusado{{ readonly ? '' : ' (opcional)' }}
-      </h6>
-      @if (!readonly) {
-        <p class="text-muted small">
-          A MPU só aparece na busca automática por par (RN008.02, usada no
-          cadastro de crimes) se estiver vinculada a uma vítima/acusado que já
-          exista no Scelus — o que só ocorre depois que um fato ocorrido foi
-          cadastrado para o processo. Informe o número do processo acima e
-          clique em "Buscar Vínculos" para localizar vítima/acusado já
-          cadastrados.
-        </p>
-      }
-      <div class="row g-2 align-items-end">
-        @if (!readonly) {
-          <div class="col-md-3">
-            <button
-              type="button"
-              tj-button-secondary
-              [disabled]="buscandoVinculos || !entity.numeroUnico"
-              (click)="buscarVinculosDisponiveis()">
-              {{ buscandoVinculos ? 'Buscando...' : 'Buscar Vínculos' }}
-            </button>
-          </div>
-        }
-        <div class="col-md-4">
-          <tj-select
-            label="Vítima"
-            name="idVitima"
-            [readonly]="readonly"
-            [options]="vitimaOptions"
-            [(ngModel)]="entity.idVitima"
-            placeholder="Nenhuma"></tj-select>
-        </div>
-        <div class="col-md-4">
-          <tj-select
-            label="Acusado"
-            name="idAcusado"
-            [readonly]="readonly"
-            [options]="acusadoOptions"
-            [(ngModel)]="entity.idAcusado"
-            placeholder="Nenhum"></tj-select>
-        </div>
-      </div>
-      @if (!readonly) {
-        @if (erroVinculos) {
-          <div class="alert alert-danger mt-2">{{ erroVinculos }}</div>
-        } @else if (
-          vinculosBuscados && !vitimaOptions.length && !acusadoOptions.length
-        ) {
-          <div class="alert alert-warning mt-2">
-            Nenhuma vítima/acusado cadastrada no Scelus para este processo
-            ainda. Cadastre o fato ocorrido primeiro (menu "Novo Fato Ocorrido")
-            — depois volte aqui para vincular esta MPU.
-          </div>
-        }
-      }
-
       <div class="row g-2 mt-1">
         <div class="col-md-12">
           <tj-textarea

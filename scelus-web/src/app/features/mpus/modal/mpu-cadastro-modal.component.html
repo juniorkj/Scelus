@@ -1,0 +1,133 @@
+<form #form="ngForm">
+  <h6 class="section-title mt-2">
+    <tj-icon icon="Shield"></tj-icon>
+    Dados da Medida Protetiva
+  </h6>
+  <div class="row g-2">
+    <div class="col-md-3">
+      <tj-input
+        label="Nº da MPU"
+        name="numeroMpu"
+        [required]="true"
+        [(ngModel)]="mpu.numeroMpu"
+        placeholder="Ex: MPU-2026-0001"></tj-input>
+    </div>
+    <div class="col-md-4">
+      <tj-input
+        label="Número do Processo"
+        name="numeroUnico"
+        [(ngModel)]="mpu.numeroUnico"
+        mask="0000000-00.0000.0.00.0000"
+        placeholder="Ex: 0800123-45.2026.8.10.0001"></tj-input>
+    </div>
+    <div class="col-md-3">
+      <tj-date-picker
+        label="Data da Decisão"
+        name="dataDecisao"
+        [required]="true"
+        [(ngModel)]="mpu.dataDecisao"></tj-date-picker>
+    </div>
+    <div class="col-md-2">
+      <tj-radio
+        label="Concedida?"
+        name="concedida"
+        [required]="true"
+        [toLineInForm]="true"
+        [options]="simNaoOptions"
+        [(ngModel)]="mpu.concedida"></tj-radio>
+    </div>
+  </div>
+
+  <div class="row g-2 mt-1">
+    <div class="col-md-12">
+      <tj-textarea
+        label="Legislação / Fundamento"
+        name="legislacaoFundamento"
+        [required]="true"
+        [(ngModel)]="mpu.legislacaoFundamento"></tj-textarea>
+    </div>
+  </div>
+
+  <hr />
+  <h6 class="section-title">
+    <tj-icon icon="Bell"></tj-icon>
+    Intimações e Ciência
+  </h6>
+  <div class="row g-2">
+    <div class="col-md-3">
+      <tj-date-picker
+        label="Intimação do Acusado"
+        name="dataIntimacaoAcusado"
+        [required]="true"
+        [(ngModel)]="mpu.dataIntimacaoAcusado"></tj-date-picker>
+    </div>
+    <div class="col-md-3">
+      <tj-date-picker
+        label="Intimação da Vítima"
+        name="dataIntimacaoVitima"
+        [required]="true"
+        [(ngModel)]="mpu.dataIntimacaoVitima"></tj-date-picker>
+    </div>
+    <div class="col-md-3">
+      <tj-date-picker
+        label="Ciência do Acusado"
+        name="dataCienciaAcusado"
+        [(ngModel)]="mpu.dataCienciaAcusado"></tj-date-picker>
+    </div>
+    <div class="col-md-3">
+      <tj-date-picker
+        label="Ciência da Vítima"
+        name="dataCienciaVitima"
+        [(ngModel)]="mpu.dataCienciaVitima"></tj-date-picker>
+    </div>
+  </div>
+
+  <hr />
+  <h6 class="section-title">
+    <tj-icon icon="ClipboardList"></tj-icon>
+    Situação
+  </h6>
+  <div class="row g-2">
+    <div class="col-md-3">
+      <tj-radio
+        label="Pedido de Desistência?"
+        name="pedidoDesistencia"
+        [required]="true"
+        [toLineInForm]="true"
+        [options]="simNaoOptions"
+        [(ngModel)]="mpu.pedidoDesistencia"></tj-radio>
+    </div>
+    <div class="col-md-3">
+      <tj-radio
+        label="Inquérito Instaurado?"
+        name="inqueritoInstaurado"
+        [required]="true"
+        [toLineInForm]="true"
+        [options]="simNaoOptions"
+        [(ngModel)]="mpu.inqueritoInstaurado"></tj-radio>
+    </div>
+    <div class="col-md-6">
+      <tj-textarea
+        label="Observações"
+        name="observacoes"
+        [(ngModel)]="mpu.observacoes"></tj-textarea>
+    </div>
+  </div>
+
+  <div class="row g-2 mt-3 justify-content-end">
+    <div class="col-auto">
+      <button type="button" tj-button-secondary (click)="cancelar()">
+        Cancelar
+      </button>
+    </div>
+    <div class="col-auto">
+      <button
+        type="button"
+        tj-button-primary
+        [disabled]="!podeSalvar"
+        (click)="salvar()">
+        Salvar
+      </button>
+    </div>
+  </div>
+</form>
