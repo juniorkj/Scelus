@@ -561,3 +561,9 @@ BEGIN
 
 END;
 $function$;
+
+-- ── tb_processo_crime.dta_inicio_tipificacao passa a permitir NULL (CSU002 —
+-- nem TPU/CNJ nem PJe fornecem hoje a data de tipificação; o campo deixou de
+-- ser obrigatório na tela, então não pode mais ser NOT NULL no banco) ──
+ALTER TABLE public.tb_processo_crime
+ALTER COLUMN dta_inicio_tipificacao DROP NOT NULL;

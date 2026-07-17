@@ -21,7 +21,7 @@ public class ProcessoCrime {
     @Column(name = "int_processo_crime_id")
     private Long id;
 
-    @Column(name = "dta_inicio_tipificacao", nullable = false)
+    @Column(name = "dta_inicio_tipificacao")
     private LocalDateTime dataInicioTipificacao;
 
     @Column(name = "dta_fim_tipificacao")

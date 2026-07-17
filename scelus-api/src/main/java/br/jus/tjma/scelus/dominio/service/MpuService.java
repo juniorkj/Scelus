@@ -7,7 +7,7 @@ import br.jus.tjma.scelus.dominio.dto.CadastroMpuResponse;
 import br.jus.tjma.scelus.dominio.dto.FiltroConsultaMpus;
 import br.jus.tjma.scelus.dominio.dto.MpuDTO;
 import br.jus.tjma.scelus.dominio.dto.MpuVinculadaDTO;
-import br.jus.tjma.scelus.dominio.dto.VinculoDisponivelMpuDTO;
+import br.jus.tjma.scelus.dominio.dto.MpuVinculoOutroProcessoDTO;
 import br.jus.tjma.scelus.dominio.dto.VinculoMpuRequest;
 import br.jus.tjma.scelus.dominio.dto.VinculoMpuResponse;
 import java.sql.Timestamp;
@@ -125,6 +125,57 @@ public class MpuService {
     }
 
     /**
+     * Lista MPUs já vinculadas (via tb_fato_ocorrido_mpu) à vítima e/ou ao
+     * acusado informados em QUALQUER fato ocorrido — diferente de
+     * {@link #buscarPorPar}, que exige o par junto num mesmo registro de MPU,
+     * aqui cada parte é pesquisada isoladamente, para alertar o usuário do
+     * CSU002 sobre MPUs de outros processos (RN008.02 — vínculo N:M entre
+     * MPU e partes, já suportado por tb_fato_ocorrido_mpu).
+     *
+     * @param idParteVitima      Identificador da parte (PJe) da vítima.
+     * @param idParteAcusado     Identificador da parte (PJe) do acusado.
+     * @param idFatoOcorridoAtual Fato ocorrido em edição, excluído do resultado (pode ser nulo, cadastro novo).
+     * @return MPUs vinculadas à vítima ou ao acusado em outros processos.
+     */
+    @Transactional(readOnly = true)
+    public List<MpuVinculoOutroProcessoDTO> buscarVinculosDeOutrosProcessos(
+            Long idParteVitima, Long idParteAcusado, Long idFatoOcorridoAtual) {
+        MapSqlParameterSource parametros = new MapSqlParameterSource()
+                .addValue("idParteVitima", idParteVitima)
+                .addValue("idParteAcusado", idParteAcusado)
+                .addValue("idFatoOcorridoAtual", idFatoOcorridoAtual);
+
+        return jdbcTemplate.query(
+                "SELECT mpu.int_mpu_id, mpu.str_numero_mpu, lv.str_numero_unico AS numero_unico_processo, "
+                        + "       mpu.bol_concedida, 'vitima' AS papel "
+                        + "FROM public.tb_fato_ocorrido_mpu fom "
+                        + "JOIN public.tb_medida_protetiva_urgencia mpu ON mpu.int_mpu_id = fom.int_mpu_id "
+                        + "JOIN public.tb_fato_ocorrido fo ON fo.int_fato_ocorrido_id = fom.int_fato_ocorrido_id "
+                        + "JOIN public.tb_vitima v ON v.int_vitima_id = fo.int_vitima_id "
+                        + "JOIN public.tb_litigancia lv ON lv.int_litigancia_id = v.int_litigancia_id "
+                        + "WHERE lv.int_parte_id = :idParteVitima "
+                        + "  AND (:idFatoOcorridoAtual IS NULL OR fo.int_fato_ocorrido_id <> :idFatoOcorridoAtual) "
+                        + "UNION "
+                        + "SELECT mpu.int_mpu_id, mpu.str_numero_mpu, la.str_numero_unico AS numero_unico_processo, "
+                        + "       mpu.bol_concedida, 'acusado' AS papel "
+                        + "FROM public.tb_fato_ocorrido_mpu fom "
+                        + "JOIN public.tb_medida_protetiva_urgencia mpu ON mpu.int_mpu_id = fom.int_mpu_id "
+                        + "JOIN public.tb_fato_ocorrido fo ON fo.int_fato_ocorrido_id = fom.int_fato_ocorrido_id "
+                        + "JOIN public.tb_acusado a ON a.int_acusado_id = fo.int_acusado_id "
+                        + "JOIN public.tb_litigancia la ON la.int_litigancia_id = a.int_litigancia_id "
+                        + "WHERE la.int_parte_id = :idParteAcusado "
+                        + "  AND (:idFatoOcorridoAtual IS NULL OR fo.int_fato_ocorrido_id <> :idFatoOcorridoAtual) "
+                        + "ORDER BY numero_unico_processo",
+                parametros,
+                (rs, rowNum) -> new MpuVinculoOutroProcessoDTO(
+                        rs.getLong("int_mpu_id"),
+                        rs.getString("str_numero_mpu"),
+                        rs.getString("numero_unico_processo"),
+                        rs.getString("bol_concedida"),
+                        rs.getString("papel")));
+    }
+
+    /**
      * Busca uma MPU pelo identificador (tela de edição).
      *
      * @param idMpu Identificador da MPU.
@@ -182,45 +233,6 @@ public class MpuService {
                 rs.getString("str_observacoes"),
                 (Long) rs.getObject("int_vitima_id"),
                 (Long) rs.getObject("int_acusado_id"));
-    }
-
-    /**
-     * Lista as vítimas/acusados já cadastrados no Scelus para o número de
-     * processo informado (litigâncias com fato ocorrido já registrado),
-     * disponíveis para vincular a uma MPU cadastrada pela tela avulsa.
-     *
-     * <p>Ao contrário de {@link #buscarPorPar}, esta consulta não depende de
-     * partes do PJe — usa diretamente {@code tb_litigancia.str_numero_unico},
-     * já que aqui o objetivo é apenas reaproveitar vítima/acusado que já
-     * existem no Scelus para este processo específico (RE02/RE03 do CSU008:
-     * a MPU só pode se vincular a um par cujo fato ocorrido já foi
-     * cadastrado — não existe, na especificação, cadastro de MPU "solta",
-     * sem fato ocorrido).
-     *
-     * @param numeroUnico Número único (CNJ) do processo.
-     * @return Litigâncias (vítima/acusado) já cadastradas para o processo.
-     */
-    @Transactional(readOnly = true)
-    public List<VinculoDisponivelMpuDTO> buscarVinculosDisponiveis(String numeroUnico) {
-        MapSqlParameterSource parametros = new MapSqlParameterSource("numeroUnico", numeroUnico);
-
-        return jdbcTemplate.query(
-                "SELECT l.int_parte_id AS idParte, p.str_polo AS polo, "
-                        + "       v.int_vitima_id AS idVitima, a.int_acusado_id AS idAcusado "
-                        + "FROM public.tb_litigancia l "
-                        + "LEFT JOIN public.tb_polo p ON p.int_polo_id = l.int_polo_id "
-                        + "LEFT JOIN public.tb_vitima v ON v.int_litigancia_id = l.int_litigancia_id "
-                        + "LEFT JOIN public.tb_acusado a ON a.int_litigancia_id = l.int_litigancia_id "
-                        // Compara só os dígitos: o frontend envia o número sem a máscara
-                        // (0800922...), mas tb_litigancia.str_numero_unico é gravado
-                        // formatado (0800922-09.2021.8.10.0037).
-                        + "WHERE regexp_replace(l.str_numero_unico, '[^0-9]', '', 'g') "
-                        + "    = regexp_replace(:numeroUnico, '[^0-9]', '', 'g') "
-                        + "AND (v.int_vitima_id IS NOT NULL OR a.int_acusado_id IS NOT NULL)",
-                parametros,
-                (rs, rowNum) -> new VinculoDisponivelMpuDTO(
-                        rs.getLong("idParte"), rs.getString("polo"), (Long) rs.getObject("idVitima"), (Long)
-                                rs.getObject("idAcusado")));
     }
 
     /**

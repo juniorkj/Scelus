@@ -30,7 +30,6 @@ public record ParteDetalheDTO(
         List<Long> idsOcupacao,
         List<Long> idsDeficiencia,
         List<Long> idsDroga,
-        Long idEscutaJudicial,
         Long idCep,
         String descricaoCep,
         List<BeneficioDetalheDTO> beneficios,

@@ -33,7 +33,6 @@ import br.jus.tjma.scelus.dominio.repository.FatoOcorridoComunicanteRepository;
 import br.jus.tjma.scelus.dominio.repository.FatoOcorridoRepository;
 import br.jus.tjma.scelus.dominio.repository.LitigenciaDeficienciaRepository;
 import br.jus.tjma.scelus.dominio.repository.LitigenciaDrogaRepository;
-import br.jus.tjma.scelus.dominio.repository.LitigenciaEscutaJudicialRepository;
 import br.jus.tjma.scelus.dominio.repository.LitigenciaOcupacaoRepository;
 import br.jus.tjma.scelus.dominio.repository.ProcessoCrimeRepository;
 import br.jus.tjma.scelus.dominio.repository.VinculoRepository;
@@ -82,7 +81,6 @@ public class CadastroCrimeCompletoService {
     private final LitigenciaOcupacaoRepository litigenciaOcupacaoRepository;
     private final LitigenciaDeficienciaRepository litigenciaDeficienciaRepository;
     private final LitigenciaDrogaRepository litigenciaDrogaRepository;
-    private final LitigenciaEscutaJudicialRepository litigenciaEscutaJudicialRepository;
     private final MpuService mpuService;
 
     public CadastroCrimeCompletoService(
@@ -100,7 +98,6 @@ public class CadastroCrimeCompletoService {
             LitigenciaOcupacaoRepository litigenciaOcupacaoRepository,
             LitigenciaDeficienciaRepository litigenciaDeficienciaRepository,
             LitigenciaDrogaRepository litigenciaDrogaRepository,
-            LitigenciaEscutaJudicialRepository litigenciaEscutaJudicialRepository,
             MpuService mpuService) {
         this.jdbcTemplate = jdbcTemplate;
         this.processoCrimeRepository = processoCrimeRepository;
@@ -116,7 +113,6 @@ public class CadastroCrimeCompletoService {
         this.litigenciaOcupacaoRepository = litigenciaOcupacaoRepository;
         this.litigenciaDeficienciaRepository = litigenciaDeficienciaRepository;
         this.litigenciaDrogaRepository = litigenciaDrogaRepository;
-        this.litigenciaEscutaJudicialRepository = litigenciaEscutaJudicialRepository;
         this.mpuService = mpuService;
     }
 
@@ -385,10 +381,6 @@ public class CadastroCrimeCompletoService {
                 .findByIdLitigancia(idLitigancia)
                 .forEach(a ->
                         executarExclusaoAssociacao("pkg_litigancia.fn_litigancia_deficiencia_del(:id)", a.getId()));
-        litigenciaEscutaJudicialRepository
-                .findByIdLitigancia(idLitigancia)
-                .forEach(a ->
-                        executarExclusaoAssociacao("pkg_litigancia.fn_litigancia_escuta_judicial_del(:id)", a.getId()));
         litigenciaDrogaRepository
                 .findByIdLitigancia(idLitigancia)
                 .forEach(a -> executarExclusaoAssociacao("pkg_litigancia.fn_litigancia_droga_del(:id)", a.getId()));
@@ -608,13 +600,6 @@ public class CadastroCrimeCompletoService {
                         idLitigancia);
             }
         }
-        if (parte.idEscutaJudicial() != null) {
-            executarInsercaoAssociacao(
-                    "pkg_litigancia.fn_litigancia_escuta_judicial_ins(:idAssociado, :idLitigancia)",
-                    "p_int_litigancia_escuta_judicial_id",
-                    parte.idEscutaJudicial(),
-                    idLitigancia);
-        }
         processarDrogas(idLitigancia, parte.idSituacaoUsoDroga(), parte.idsDroga());
     }
 
@@ -660,9 +645,9 @@ public class CadastroCrimeCompletoService {
     }
 
     /**
-     * Executa uma função fn_litigancia_*_ins de associação N:M (ocupação, deficiência,
-     * droga ou escuta judicial), todas com a assinatura (idAssociado, idLitigancia)
-     * e retorno (id da associação, mensagem) — apenas o nome da coluna OUT do id muda.
+     * Executa uma função fn_litigancia_*_ins de associação N:M (ocupação, deficiência
+     * ou droga), todas com a assinatura (idAssociado, idLitigancia) e retorno
+     * (id da associação, mensagem) — apenas o nome da coluna OUT do id muda.
      */
     private void executarInsercaoAssociacao(
             String chamadaFuncao, String colunaId, Long idAssociado, Long idLitigancia) {

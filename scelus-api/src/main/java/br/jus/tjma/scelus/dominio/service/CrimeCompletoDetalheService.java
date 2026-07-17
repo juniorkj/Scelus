@@ -26,7 +26,6 @@ import br.jus.tjma.scelus.dominio.repository.FatoOcorridoComunicanteRepository;
 import br.jus.tjma.scelus.dominio.repository.FatoOcorridoRepository;
 import br.jus.tjma.scelus.dominio.repository.LitigenciaDeficienciaRepository;
 import br.jus.tjma.scelus.dominio.repository.LitigenciaDrogaRepository;
-import br.jus.tjma.scelus.dominio.repository.LitigenciaEscutaJudicialRepository;
 import br.jus.tjma.scelus.dominio.repository.LitigenciaOcupacaoRepository;
 import br.jus.tjma.scelus.dominio.repository.ProcessoCrimeRepository;
 import br.jus.tjma.scelus.dominio.repository.VinculoRepository;
@@ -69,7 +68,6 @@ public class CrimeCompletoDetalheService {
     private final LitigenciaOcupacaoRepository litigenciaOcupacaoRepository;
     private final LitigenciaDeficienciaRepository litigenciaDeficienciaRepository;
     private final LitigenciaDrogaRepository litigenciaDrogaRepository;
-    private final LitigenciaEscutaJudicialRepository litigenciaEscutaJudicialRepository;
 
     public CrimeCompletoDetalheService(
             NamedParameterJdbcTemplate jdbcTemplate,
@@ -86,8 +84,7 @@ public class CrimeCompletoDetalheService {
             FatoOcorridoComunicanteRepository fatoOcorridoComunicanteRepository,
             LitigenciaOcupacaoRepository litigenciaOcupacaoRepository,
             LitigenciaDeficienciaRepository litigenciaDeficienciaRepository,
-            LitigenciaDrogaRepository litigenciaDrogaRepository,
-            LitigenciaEscutaJudicialRepository litigenciaEscutaJudicialRepository) {
+            LitigenciaDrogaRepository litigenciaDrogaRepository) {
         this.jdbcTemplate = jdbcTemplate;
         this.fatoOcorridoRepository = fatoOcorridoRepository;
         this.processoCrimeRepository = processoCrimeRepository;
@@ -103,7 +100,6 @@ public class CrimeCompletoDetalheService {
         this.litigenciaOcupacaoRepository = litigenciaOcupacaoRepository;
         this.litigenciaDeficienciaRepository = litigenciaDeficienciaRepository;
         this.litigenciaDrogaRepository = litigenciaDrogaRepository;
-        this.litigenciaEscutaJudicialRepository = litigenciaEscutaJudicialRepository;
     }
 
     /**
@@ -198,10 +194,6 @@ public class CrimeCompletoDetalheService {
                 litigenciaDrogaRepository.findByIdLitigancia(vitima.getIdLitigancia()).stream()
                         .map(l -> l.getIdDroga())
                         .toList(),
-                litigenciaEscutaJudicialRepository.findByIdLitigancia(vitima.getIdLitigancia()).stream()
-                        .findFirst()
-                        .map(l -> l.getIdEscutaJudicial())
-                        .orElse(null),
                 vitima.getIdCep(),
                 descricaoCep(vitima.getIdCep()),
                 beneficioRepository.findByIdLitigancia(vitima.getIdLitigancia()).stream()
@@ -241,10 +233,6 @@ public class CrimeCompletoDetalheService {
                 litigenciaDrogaRepository.findByIdLitigancia(acusado.getIdLitigancia()).stream()
                         .map(l -> l.getIdDroga())
                         .toList(),
-                litigenciaEscutaJudicialRepository.findByIdLitigancia(acusado.getIdLitigancia()).stream()
-                        .findFirst()
-                        .map(l -> l.getIdEscutaJudicial())
-                        .orElse(null),
                 null,
                 null,
                 beneficioRepository.findByIdLitigancia(acusado.getIdLitigancia()).stream()

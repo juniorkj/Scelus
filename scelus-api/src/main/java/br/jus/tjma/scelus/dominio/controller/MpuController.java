@@ -5,7 +5,7 @@ import br.jus.tjma.scelus.dominio.dto.CadastroMpuRequest;
 import br.jus.tjma.scelus.dominio.dto.CadastroMpuResponse;
 import br.jus.tjma.scelus.dominio.dto.FiltroConsultaMpus;
 import br.jus.tjma.scelus.dominio.dto.MpuDTO;
-import br.jus.tjma.scelus.dominio.dto.VinculoDisponivelMpuDTO;
+import br.jus.tjma.scelus.dominio.dto.MpuVinculoOutroProcessoDTO;
 import br.jus.tjma.scelus.dominio.service.MpuService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -69,18 +69,22 @@ public class MpuController {
     }
 
     /**
-     * Endpoint que lista vítimas/acusados já cadastrados no Scelus para o
-     * número de processo informado — usado pela tela avulsa de MPU (CSU008)
-     * para vincular a MPU a um par vítima-acusado que já tenha fato ocorrido
-     * registrado, evitando criar MPUs "órfãs" (sem vínculo) que ficam
-     * invisíveis à busca por par (RN008.02).
+     * Endpoint que lista MPUs já vinculadas à vítima e/ou ao acusado em
+     * outros processos/fatos ocorridos — exibido como alerta informativo no
+     * passo "Fato Ocorrido" do CSU002 (RN008.02).
      *
-     * @param numeroUnico Número único (CNJ) do processo.
-     * @return Litigâncias (vítima/acusado) já cadastradas para o processo.
+     * @param idParteVitima       Identificador da parte (PJe) da vítima.
+     * @param idParteAcusado      Identificador da parte (PJe) do acusado.
+     * @param idFatoOcorridoAtual Fato ocorrido em edição, excluído do resultado (opcional).
+     * @return MPUs vinculadas à vítima ou ao acusado em outros processos.
      */
-    @GetMapping("/vinculos-disponiveis")
-    public ResponseEntity<List<VinculoDisponivelMpuDTO>> buscarVinculosDisponiveis(@RequestParam String numeroUnico) {
-        return ResponseEntity.ok(mpuService.buscarVinculosDisponiveis(numeroUnico));
+    @GetMapping("/por-parte")
+    public ResponseEntity<List<MpuVinculoOutroProcessoDTO>> buscarVinculosDeOutrosProcessos(
+            @RequestParam Long idParteVitima,
+            @RequestParam Long idParteAcusado,
+            @RequestParam(required = false) Long idFatoOcorridoAtual) {
+        return ResponseEntity.ok(
+                mpuService.buscarVinculosDeOutrosProcessos(idParteVitima, idParteAcusado, idFatoOcorridoAtual));
     }
 
     /**

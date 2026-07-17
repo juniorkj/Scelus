@@ -8,8 +8,8 @@ import java.util.List;
 /**
  * javadoc Record com o perfil demográfico completo de uma vítima ou acusado no
  * wizard do CSU002 (Telas 2.5/2.6), incluindo associações múltiplas (ocupações,
- * deficiências, drogas, escuta judicial) e — para vítimas — benefícios e
- * configuração familiar.
+ * deficiências, drogas) e — para vítimas — benefícios e configuração familiar.
+ * Escuta judicial é tratada em CSU separado.
  *
  * <p>{@code chave} é um identificador atribuído pelo frontend (ex.: "V1", "A1")
  * para permitir que outros blocos do payload (vínculo, fato ocorrido,
@@ -41,7 +41,6 @@ public record ParteWizardDTO(
         List<Long> idsOcupacao,
         List<Long> idsDeficiencia,
         List<Long> idsDroga,
-        Long idEscutaJudicial,
 
         // Exclusivos da vítima
         Long idCep,
