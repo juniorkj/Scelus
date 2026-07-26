@@ -110,6 +110,7 @@
           <div class="row g-2 align-items-end">
             <div class="col-md-5">
               <tj-select
+                #crimeAssuntoSelect
                 label="Tipo de Crime (Assunto)"
                 name="crimeCometidoAssunto"
                 [required]="true"
@@ -211,7 +212,7 @@
                 label="Parte (PJe)"
                 name="idParteVitima"
                 [required]="true"
-                [options]="parteOptions"
+                [options]="partesVitimaOptions"
                 [(ngModel)]="vitima.idParte"
                 (ngModelChange)="onParteSelecionada('vitima', $event)"
                 placeholder="Selecione a vítima"></tj-select>
@@ -221,6 +222,7 @@
                 label="Polo Processual"
                 name="idPoloVitima"
                 [required]="true"
+                [readonly]="true"
                 [options]="dominios['polos']"
                 [(ngModel)]="vitima.idPolo"
                 placeholder="Selecione o polo"></tj-select>
@@ -429,7 +431,7 @@
                 label="Parte (PJe)"
                 name="idParteAcusado"
                 [required]="true"
-                [options]="parteOptions"
+                [options]="partesAcusadoOptions"
                 [(ngModel)]="acusado.idParte"
                 (ngModelChange)="onParteSelecionada('acusado', $event)"
                 placeholder="Selecione o acusado"></tj-select>
@@ -439,6 +441,7 @@
                 label="Polo Processual"
                 name="idPoloAcusado"
                 [required]="true"
+                [readonly]="true"
                 [options]="dominios['polos']"
                 [(ngModel)]="acusado.idPolo"
                 placeholder="Selecione o polo"></tj-select>

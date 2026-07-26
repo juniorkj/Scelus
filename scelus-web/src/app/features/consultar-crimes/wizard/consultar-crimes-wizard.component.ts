@@ -89,6 +89,7 @@ type Opcao = { label: string; value: number };
 export class ConsultarCrimesWizardComponent {
   @ViewChild('stepper') stepper!: TjStepper;
   @ViewChild('numeroProcessoInput') numeroProcessoInput!: TjInput;
+  @ViewChild('crimeAssuntoSelect') crimeAssuntoSelect?: TjSelect;
 
   private readonly router = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
@@ -134,6 +135,10 @@ export class ConsultarCrimesWizardComponent {
   buscandoPje = false;
   erroPje?: string;
   parteOptions: Opcao[] = [];
+  /** Partes do polo ativo (RN: a vítima só pode ser uma parte do polo ativo). */
+  partesVitimaOptions: Opcao[] = [];
+  /** Partes do polo passivo (RN: o acusado só pode ser uma parte do polo passivo). */
+  partesAcusadoOptions: Opcao[] = [];
   assuntoOptions: Opcao[] = [];
 
   // ── Passo 2: Crimes Cometidos (Tela 2.2) ──
@@ -312,6 +317,20 @@ export class ConsultarCrimesWizardComponent {
           label: i.descricao,
           value: i.id,
         }));
+        // RN: a vítima sempre é polo ativo e o acusado sempre é polo passivo —
+        // campo travado (readonly), não editável pelo usuário.
+        const poloAtivo = this.dominios['polos'].find(o =>
+          o.label.toUpperCase().startsWith('ATIVO')
+        );
+        const poloPassivo = this.dominios['polos'].find(o =>
+          o.label.toUpperCase().startsWith('PASSIVO')
+        );
+        if (poloAtivo && !this.vitima.idPolo) {
+          this.vitima.idPolo = poloAtivo.value;
+        }
+        if (poloPassivo && !this.acusado.idPolo) {
+          this.acusado.idPolo = poloPassivo.value;
+        }
       },
     });
   }
@@ -415,6 +434,8 @@ export class ConsultarCrimesWizardComponent {
     this.erroPje = undefined;
     this.processoPje = undefined;
     this.parteOptions = [];
+    this.partesVitimaOptions = [];
+    this.partesAcusadoOptions = [];
     this.assuntoOptions = [];
 
     this.processoPjeService.consultarPorNumero(numero).subscribe({
@@ -424,6 +445,18 @@ export class ConsultarCrimesWizardComponent {
           label: `${parte.nome}${parte.cpfCnpj ? ' — ' + parte.cpfCnpj : ''} (${parte.polo})`,
           value: parte.idParte,
         }));
+        this.partesVitimaOptions = (processo.partes || [])
+          .filter(parte => parte.polo === 'A')
+          .map(parte => ({
+            label: `${parte.nome}${parte.cpfCnpj ? ' — ' + parte.cpfCnpj : ''}`,
+            value: parte.idParte,
+          }));
+        this.partesAcusadoOptions = (processo.partes || [])
+          .filter(parte => parte.polo === 'P')
+          .map(parte => ({
+            label: `${parte.nome}${parte.cpfCnpj ? ' — ' + parte.cpfCnpj : ''}`,
+            value: parte.idParte,
+          }));
         this.assuntoOptions = (processo.assuntos || []).map(a => ({
           label: `${a.codigo} — ${a.descricao}`,
           value: a.codigo,
@@ -476,6 +509,18 @@ export class ConsultarCrimesWizardComponent {
                 label: `${parte.nome}${parte.cpfCnpj ? ' — ' + parte.cpfCnpj : ''} (${parte.polo})`,
                 value: parte.idParte,
               }));
+              this.partesVitimaOptions = (processo.partes || [])
+                .filter(parte => parte.polo === 'A')
+                .map(parte => ({
+                  label: `${parte.nome}${parte.cpfCnpj ? ' — ' + parte.cpfCnpj : ''}`,
+                  value: parte.idParte,
+                }));
+              this.partesAcusadoOptions = (processo.partes || [])
+                .filter(parte => parte.polo === 'P')
+                .map(parte => ({
+                  label: `${parte.nome}${parte.cpfCnpj ? ' — ' + parte.cpfCnpj : ''}`,
+                  value: parte.idParte,
+                }));
               this.assuntoOptions = (processo.assuntos || []).map(a => ({
                 label: `${a.codigo} — ${a.descricao}`,
                 value: a.codigo,
@@ -854,6 +899,10 @@ export class ConsultarCrimesWizardComponent {
       },
     ];
     this.novoCrimeCometido = {};
+    // Sem isso, o ngModel do select fica "touched" da seleção anterior e o
+    // campo exibe "Campo obrigatório" assim que é limpo, mesmo o item tendo
+    // sido adicionado com sucesso à tabela.
+    this.crimeAssuntoSelect?.input()?.control.markAsUntouched();
     this.atualizarOpcoesCrimes();
   }
 
@@ -981,8 +1030,14 @@ export class ConsultarCrimesWizardComponent {
           label: `${c.cep} — ${c.logradouro || ''} ${c.municipio || ''}/${c.uf || ''}`,
           value: c.id,
         }));
-        if (ceps.length === 1) {
-          this.vitima.idCep = this.vitima.idCep ?? ceps[0].id;
+        if (ceps.length === 0) {
+          this.vitima.idCep = undefined;
+          this.globalService.warn(
+            'CEP não encontrado',
+            'O CEP informado não foi localizado. Verifique o número digitado.'
+          );
+        } else if (ceps.length === 1) {
+          this.vitima.idCep = ceps[0].id;
         }
         this.buscandoCepVitima = false;
       },
@@ -1040,6 +1095,15 @@ export class ConsultarCrimesWizardComponent {
           label: `${c.cep} — ${c.logradouro || ''} ${c.municipio || ''}/${c.uf || ''}`,
           value: c.id,
         }));
+        if (ceps.length === 0) {
+          this.fatoIdCep = undefined;
+          this.globalService.warn(
+            'CEP não encontrado',
+            'O CEP informado não foi localizado. Verifique o número digitado.'
+          );
+        } else if (ceps.length === 1) {
+          this.fatoIdCep = ceps[0].id;
+        }
         this.buscandoCepFato = false;
       },
       error: () => (this.buscandoCepFato = false),
