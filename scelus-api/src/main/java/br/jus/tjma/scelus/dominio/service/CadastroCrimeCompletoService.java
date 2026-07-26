@@ -125,6 +125,8 @@ public class CadastroCrimeCompletoService {
     @Transactional
     public CadastroCrimeCompletoResponse cadastrar(CadastroCrimeCompletoRequest request) {
         Map<Long, ProcessoCrime> assuntoParaProcessoCrime = criarCrimesCometidos(request);
+        Long idPoloAtivo = resolverIdPolo("ATIVO");
+        Long idPoloPassivo = resolverIdPolo("PASSIVO");
 
         Map<String, Long> chaveParaIdLitigancia = new HashMap<>();
         Map<String, Long> chaveParaIdVitima = new HashMap<>();
@@ -134,7 +136,8 @@ public class CadastroCrimeCompletoService {
             if (parteVitima.idCep() == null) {
                 throw new AppException("O CEP de residência da vítima '" + parteVitima.chave() + "' é obrigatório.");
             }
-            Long idLitigancia = inserirLitigancia(parteVitima, request.numeroProcesso());
+            // RN: a vítima é sempre polo ativo, independentemente do que vier no request.
+            Long idLitigancia = inserirLitigancia(parteVitima, request.numeroProcesso(), idPoloAtivo);
             processarAssociacoesLitigancia(idLitigancia, parteVitima);
 
             Vitima vitima = new Vitima();
@@ -150,7 +153,8 @@ public class CadastroCrimeCompletoService {
         }
 
         for (ParteWizardDTO parteAcusado : request.acusados()) {
-            Long idLitigancia = inserirLitigancia(parteAcusado, request.numeroProcesso());
+            // RN: o acusado é sempre polo passivo, independentemente do que vier no request.
+            Long idLitigancia = inserirLitigancia(parteAcusado, request.numeroProcesso(), idPoloPassivo);
             processarAssociacoesLitigancia(idLitigancia, parteAcusado);
 
             Acusado acusado = new Acusado();
@@ -258,14 +262,19 @@ public class CadastroCrimeCompletoService {
         Map<Long, ProcessoCrime> assuntoParaProcessoCrime =
                 atualizarCrimesCometidos(request.numeroProcesso(), request.crimesCometidos());
 
-        atualizarPerfilLitigancia(vitima.getIdLitigancia(), request.numeroProcesso(), parteVitima);
+        // RN: a vítima é sempre polo ativo e o acusado sempre polo passivo,
+        // independentemente do que vier no request.
+        Long idPoloAtivo = resolverIdPolo("ATIVO");
+        Long idPoloPassivo = resolverIdPolo("PASSIVO");
+
+        atualizarPerfilLitigancia(vitima.getIdLitigancia(), request.numeroProcesso(), parteVitima, idPoloAtivo);
         atualizarAssociacoesLitigancia(vitima.getIdLitigancia(), parteVitima);
         vitima.setIdCep(parteVitima.idCep());
         vitimaRepository.save(vitima);
         atualizarBeneficios(vitima.getIdLitigancia(), parteVitima.beneficios());
         atualizarConfiguracoesFamiliares(vitima.getId(), parteVitima.configuracoesFamiliares());
 
-        atualizarPerfilLitigancia(acusado.getIdLitigancia(), request.numeroProcesso(), parteAcusado);
+        atualizarPerfilLitigancia(acusado.getIdLitigancia(), request.numeroProcesso(), parteAcusado, idPoloPassivo);
         atualizarAssociacoesLitigancia(acusado.getIdLitigancia(), parteAcusado);
         acusado.setPossuiAntecedentes(parteAcusado.possuiAntecedentes());
         acusado.setReincidente(parteAcusado.reincidente());
@@ -343,10 +352,11 @@ public class CadastroCrimeCompletoService {
     /**
      * Atualiza o perfil demográfico da litigância via pkg_litigancia.fn_litigancia_upd.
      */
-    private void atualizarPerfilLitigancia(Long idLitigancia, String numeroProcesso, ParteWizardDTO parte) {
+    private void atualizarPerfilLitigancia(
+            Long idLitigancia, String numeroProcesso, ParteWizardDTO parte, Long idPoloFixo) {
         MapSqlParameterSource parametros = new MapSqlParameterSource()
                 .addValue("idLitigancia", idLitigancia)
-                .addValue("idPolo", parte.idPolo())
+                .addValue("idPolo", idPoloFixo)
                 .addValue("numeroUnico", numeroProcesso)
                 .addValue("idParte", parte.idParte())
                 .addValue("idSituacaoUsoDroga", parte.idSituacaoUsoDroga())
@@ -550,9 +560,21 @@ public class CadastroCrimeCompletoService {
     /**
      * Insere a litigância da parte via pkg_litigancia.fn_litigancia_ins e retorna o id gerado.
      */
-    private Long inserirLitigancia(ParteWizardDTO parte, String numeroProcesso) {
+    /**
+     * Resolve o id de {@code tb_polo} pela descrição ("ATIVO"/"PASSIVO") — a vítima é
+     * sempre polo ativo e o acusado sempre polo passivo (regra fixa do domínio,
+     * não configurável pelo usuário), então o valor nunca é lido do request.
+     */
+    private Long resolverIdPolo(String descricao) {
+        return jdbcTemplate.queryForObject(
+                "SELECT int_polo_id FROM public.tb_polo WHERE UPPER(str_polo) = :descricao",
+                new MapSqlParameterSource("descricao", descricao),
+                Long.class);
+    }
+
+    private Long inserirLitigancia(ParteWizardDTO parte, String numeroProcesso, Long idPoloFixo) {
         MapSqlParameterSource parametros = new MapSqlParameterSource()
-                .addValue("idPolo", parte.idPolo())
+                .addValue("idPolo", idPoloFixo)
                 .addValue("numeroUnico", numeroProcesso)
                 .addValue("idParte", parte.idParte())
                 .addValue("idSituacaoUsoDroga", parte.idSituacaoUsoDroga())
