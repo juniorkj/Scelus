@@ -35,4 +35,5 @@ public record CadastroMpuRequest(
         Long idAcusado,
         Long idVitima,
         @NotBlank(message = "O número da MPU é obrigatório.") String numeroMpu,
-        String numeroUnico) {}
+        String numeroUnico,
+        LocalDateTime dataFimVigencia) {}

@@ -66,6 +66,9 @@ public class MedidaProtetivaUrgencia {
     @Column(name = "dta_criacao", nullable = false)
     private LocalDateTime dataCriacao;
 
+    @Column(name = "dta_fim_vigencia")
+    private LocalDateTime dataFimVigencia;
+
     public Long getId() {
         return id;
     }
@@ -192,5 +195,13 @@ public class MedidaProtetivaUrgencia {
 
     public void setDataCriacao(LocalDateTime dataCriacao) {
         this.dataCriacao = dataCriacao;
+    }
+
+    public LocalDateTime getDataFimVigencia() {
+        return dataFimVigencia;
+    }
+
+    public void setDataFimVigencia(LocalDateTime dataFimVigencia) {
+        this.dataFimVigencia = dataFimVigencia;
     }
 }

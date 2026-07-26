@@ -51,7 +51,7 @@ public class MpuService {
         sql.append("       dta_decisao, bol_concedida, dta_intimacao_acusado, dta_intimacao_vitima, ");
         sql.append("       dta_ciencia_vitima, dta_ciencia_acusado, ");
         sql.append("       bol_pedido_desistencia, bol_inquerito_instaurado, str_observacoes, ");
-        sql.append("       int_vitima_id, int_acusado_id ");
+        sql.append("       int_vitima_id, int_acusado_id, dta_fim_vigencia ");
         sql.append("FROM public.tb_medida_protetiva_urgencia ");
         sql.append("WHERE 1=1 ");
 
@@ -95,7 +95,8 @@ public class MpuService {
      * Busca, de forma global (independente do processo de origem), as MPUs já
      * cadastradas para o mesmo par vítima-acusado (RN008.02), identificado pelas
      * partes do PJe (estáveis entre processos, ao contrário de vítima/acusado
-     * internos, que são recriados a cada novo processo).
+     * internos, que são recriados a cada novo processo). Só considera MPUs
+     * vigentes (dta_fim_vigencia nula — spec 26/07/2026).
      *
      * @param idParteVitima  Identificador da parte (PJe) da vítima.
      * @param idParteAcusado Identificador da parte (PJe) do acusado.
@@ -112,13 +113,14 @@ public class MpuService {
                         + "       mpu.dta_decisao, mpu.bol_concedida, mpu.dta_intimacao_acusado, mpu.dta_intimacao_vitima, "
                         + "       mpu.dta_ciencia_vitima, mpu.dta_ciencia_acusado, "
                         + "       mpu.bol_pedido_desistencia, mpu.bol_inquerito_instaurado, mpu.str_observacoes, "
-                        + "       mpu.int_vitima_id, mpu.int_acusado_id "
+                        + "       mpu.int_vitima_id, mpu.int_acusado_id, mpu.dta_fim_vigencia "
                         + "FROM public.tb_medida_protetiva_urgencia mpu "
                         + "JOIN public.tb_vitima v ON v.int_vitima_id = mpu.int_vitima_id "
                         + "JOIN public.tb_litigancia lv ON lv.int_litigancia_id = v.int_litigancia_id "
                         + "JOIN public.tb_acusado a ON a.int_acusado_id = mpu.int_acusado_id "
                         + "JOIN public.tb_litigancia la ON la.int_litigancia_id = a.int_litigancia_id "
                         + "WHERE lv.int_parte_id = :idParteVitima AND la.int_parte_id = :idParteAcusado "
+                        + "  AND mpu.dta_fim_vigencia IS NULL "
                         + "ORDER BY mpu.dta_decisao DESC",
                 parametros,
                 this::mapearMpu);
@@ -189,7 +191,7 @@ public class MpuService {
                         + "dta_decisao, bol_concedida, dta_intimacao_acusado, dta_intimacao_vitima, "
                         + "dta_ciencia_vitima, dta_ciencia_acusado, "
                         + "bol_pedido_desistencia, bol_inquerito_instaurado, str_observacoes, "
-                        + "int_vitima_id, int_acusado_id "
+                        + "int_vitima_id, int_acusado_id, dta_fim_vigencia "
                         + "FROM public.tb_medida_protetiva_urgencia WHERE int_mpu_id = :idMpu",
                 parametros,
                 this::mapearMpu);
@@ -232,7 +234,8 @@ public class MpuService {
                 rs.getString("bol_inquerito_instaurado"),
                 rs.getString("str_observacoes"),
                 (Long) rs.getObject("int_vitima_id"),
-                (Long) rs.getObject("int_acusado_id"));
+                (Long) rs.getObject("int_acusado_id"),
+                paraLocalDateTime(rs.getTimestamp("dta_fim_vigencia")));
     }
 
     /**
@@ -257,7 +260,8 @@ public class MpuService {
                 .addValue("idAcusado", request.idAcusado())
                 .addValue("idVitima", request.idVitima())
                 .addValue("numeroMpu", request.numeroMpu())
-                .addValue("numeroUnico", request.numeroUnico());
+                .addValue("numeroUnico", request.numeroUnico())
+                .addValue("dataFimVigencia", paraTimestamp(request.dataFimVigencia()));
 
         ResultadoFuncao resultado = jdbcTemplate.queryForObject(
                 "SELECT p_int_mpu_id AS id, p_resultado AS mensagem "
@@ -265,7 +269,7 @@ public class MpuService {
                         + ":legislacaoFundamento, :dataDecisao, :concedida, :dataIntimacaoAcusado, "
                         + ":dataIntimacaoVitima, :dataCienciaVitima, :dataCienciaAcusado, "
                         + ":pedidoDesistencia, :inqueritoInstaurado, :observacoes, "
-                        + ":idAcusado, :idVitima, :numeroMpu, :numeroUnico)",
+                        + ":idAcusado, :idVitima, :numeroMpu, :numeroUnico, :dataFimVigencia)",
                 parametros,
                 (rs, rowNum) -> mapearResultado(rs.getLong("id"), rs.wasNull(), rs.getString("mensagem")));
 
@@ -297,14 +301,15 @@ public class MpuService {
                 .addValue("idAcusado", request.idAcusado())
                 .addValue("idVitima", request.idVitima())
                 .addValue("numeroMpu", request.numeroMpu())
-                .addValue("numeroUnico", request.numeroUnico());
+                .addValue("numeroUnico", request.numeroUnico())
+                .addValue("dataFimVigencia", paraTimestamp(request.dataFimVigencia()));
 
         String mensagem = jdbcTemplate.queryForObject(
                 "SELECT pkg_medida_protetiva.fn_medida_protetiva_urgencia_upd("
                         + ":idMpu, :legislacaoFundamento, :dataDecisao, :concedida, :dataIntimacaoAcusado, "
                         + ":dataIntimacaoVitima, :dataCienciaVitima, :dataCienciaAcusado, "
                         + ":pedidoDesistencia, :inqueritoInstaurado, :observacoes, "
-                        + ":idAcusado, :idVitima, :numeroMpu, :numeroUnico)",
+                        + ":idAcusado, :idVitima, :numeroMpu, :numeroUnico, :dataFimVigencia)",
                 parametros,
                 String.class);
 

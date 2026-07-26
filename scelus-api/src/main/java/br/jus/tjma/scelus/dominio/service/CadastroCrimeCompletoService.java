@@ -736,7 +736,8 @@ public class CadastroCrimeCompletoService {
                     idAcusado,
                     idVitima,
                     mpuDTO.novaMpu().numeroMpu(),
-                    mpuDTO.novaMpu().numeroUnico());
+                    mpuDTO.novaMpu().numeroUnico(),
+                    mpuDTO.novaMpu().dataFimVigencia());
             idMpu = mpuService.cadastrarMpu(novaMpuComPartes).idMpu();
         }
 

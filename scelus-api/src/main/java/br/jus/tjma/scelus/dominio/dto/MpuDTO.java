@@ -27,4 +27,11 @@ public record MpuDTO(
         String inqueritoInstaurado,
         String observacoes,
         Long idVitima,
-        Long idAcusado) {}
+        Long idAcusado,
+        LocalDateTime dataFimVigencia) {
+
+    /** RN008.02: uma MPU é vigente enquanto a data fim de vigência não for informada. */
+    public boolean vigente() {
+        return dataFimVigencia == null;
+    }
+}
