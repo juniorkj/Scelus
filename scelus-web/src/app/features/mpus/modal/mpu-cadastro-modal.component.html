@@ -106,7 +106,13 @@
         [options]="simNaoOptions"
         [(ngModel)]="mpu.inqueritoInstaurado"></tj-radio>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-3">
+      <tj-date-picker
+        label="Data Fim de Vigência"
+        name="dataFimVigencia"
+        [(ngModel)]="mpu.dataFimVigencia"></tj-date-picker>
+    </div>
+    <div class="col-md-3">
       <tj-textarea
         label="Observações"
         name="observacoes"

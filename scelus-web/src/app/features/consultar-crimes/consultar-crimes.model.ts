@@ -118,6 +118,7 @@ export interface MpuDTO {
   observacoes?: string;
   idVitima?: number;
   idAcusado?: number;
+  dataFimVigencia?: string;
 }
 
 /** MPU já vinculada à vítima ou ao acusado em OUTRO processo/fato ocorrido (RN008.02). */
@@ -256,6 +257,7 @@ export interface CadastroMpuDados {
   observacoes?: string;
   numeroMpu?: string;
   numeroUnico?: string;
+  dataFimVigencia?: string;
 }
 
 /** Vínculo de MPU nova ou existente no wizard (Tela 2.8 → CSU008). */

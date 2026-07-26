@@ -60,6 +60,7 @@ export class MpusManterComponent extends TjCrudBaseComponent<MpusService> {
     'dataIntimacaoVitima',
     'dataCienciaVitima',
     'dataCienciaAcusado',
+    'dataFimVigencia',
   ];
 
   readonly simNaoOptions: TjRadioOption[] = [

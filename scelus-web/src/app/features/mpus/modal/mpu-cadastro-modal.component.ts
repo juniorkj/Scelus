@@ -63,6 +63,7 @@ export class MpuCadastroModalComponent {
     pedidoDesistencia: '',
     inqueritoInstaurado: '',
     observacoes: '',
+    dataFimVigencia: '',
   };
 
   get podeSalvar(): boolean {
